@@ -1,3 +1,4 @@
+/// <reference lib="dom.iterable" />
 import type { Server } from "node:http";
 
 // Simple type definitions for our server
@@ -27,9 +28,9 @@ export class DenoHttpServer {
 
       // Create a simple request object that mimics Express req
       const query: Record<string, string> = {};
-      for (const [key, value] of searchParams) {
+      searchParams.forEach((value, key) => {
         query[key] = value;
-      }
+      });
 
       const req: RequestLike = {
         query,

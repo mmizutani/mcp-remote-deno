@@ -17,7 +17,10 @@
     "proxy:start": "deno run --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/proxy.ts",
     "proxy:watch": "deno run --watch --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/proxy.ts",
     "client:start": "deno run --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/client.ts",
-    "client:watch": "deno run --watch --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/client.ts"
+    "client:watch": "deno run --watch --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/client.ts",
+    "test": "deno test --allow-net --allow-env --allow-read --allow-run --allow-sys tests/",
+    "test:watch": "deno test --watch --allow-net --allow-env --allow-read --allow-run --allow-sys tests/",
+    "test:coverage": "deno test --coverage=coverage --allow-net --allow-env --allow-read --allow-run --allow-sys tests/ && deno coverage coverage"
   },
   "imports": {
     "std/": "https://deno.land/std@0.220.0/",
