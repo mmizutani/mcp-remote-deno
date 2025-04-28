@@ -12,18 +12,18 @@ Here is a plan to transform your Node.js CLI package into a Deno CLI project, fo
     - [x] Review `compilerOptions`. Deno uses these, but ensure they align with Deno's defaults or project needs. Remove `"types": ["node"]` as Deno handles Node types via `node:` specifiers.
     - [x] Remove `"unstable": ["sloppy-imports"]` and plan to add explicit file extensions to imports.
 3. **Adapt Code in `src/`:**
-    - [ ] **Imports:**
-        - [ ] Prefix all Node.js built-in module imports with `node:` (e.g., `import { EventEmitter } from 'node:events';`).
-        - [ ] Update imports for external npm packages to match the `npm:` specifiers defined in `deno.json` or directly use `npm:` specifiers in the import statement.
-        - [ ] Append the `.ts` (or `.js` if applicable) extension to all relative file imports within the `src/` directory (e.g., `import { ... } from './lib/utils.ts';`).
-    - [ ] **Node Globals/APIs:**
-        - [ ] Replace `process.argv` with `Deno.args`. Note that `Deno.args` does *not* include the script name, so adjustments to slicing (like `.slice(2)`) might be needed or removed.
-        - [ ] Replace `process.exit()` with `Deno.exit()`.
-        - [ ] Replace or refactor any other Node-specific APIs that don't have direct Deno equivalents or aren't polyfilled via the `node:` specifier (e.g., check compatibility of `StdioServerTransport` if it relies heavily on Node streams internally, although the `npm:` specifier should handle much of this).
+    - [x] **Imports:**
+        - [x] Prefix all Node.js built-in module imports with `node:` (e.g., `import { EventEmitter } from 'node:events';`).
+        - [x] Update imports for external npm packages to match the `npm:` specifiers defined in `deno.json` or directly use `npm:` specifiers in the import statement.
+        - [x] Append the `.ts` (or `.js` if applicable) extension to all relative file imports within the `src/` directory (e.g., `import { ... } from './lib/utils.ts';`).
+    - [x] **Node Globals/APIs:**
+        - [x] Replace `process.argv` with `Deno.args`. Note that `Deno.args` does *not* include the script name, so adjustments to slicing (like `.slice(2)`) might be needed or removed.
+        - [x] Replace `process.exit()` with `Deno.exit()`.
+        - [x] Replace or refactor any other Node-specific APIs that don't have direct Deno equivalents or aren't polyfilled via the `node:` specifier (e.g., check compatibility of `StdioServerTransport` if it relies heavily on Node streams internally, although the `npm:` specifier should handle much of this).
 4. **Cleanup Project Root:**
-    - [ ] Delete `pnpm-lock.yaml` and `node_modules` (if present).
-    - [ ] Decide whether to keep `package.json`. It's not used by Deno for dependencies but can be useful for metadata (name, version, description). If kept, ensure it doesn't cause confusion.
-    - [ ] Remove `tsconfig.json` if all necessary compiler options are migrated to `deno.json`. Linters/editors might still pick it up, so consider keeping it for tooling compatibility if needed, but `deno.json` takes precedence for Deno itself.
+    - [x] Delete `pnpm-lock.yaml` and `node_modules` (if present).
+    - [x] Decide whether to keep `package.json`. It's not used by Deno for dependencies but can be useful for metadata (name, version, description). If kept, ensure it doesn't cause confusion.
+    - [x] Remove `tsconfig.json` if all necessary compiler options are migrated to `deno.json`. Linters/editors might still pick it up, so consider keeping it for tooling compatibility if needed, but `deno.json` takes precedence for Deno itself.
 5. **Testing:**
     - [ ] Run the main task using `deno task start <args...>`.
     - [ ] Thoroughly test the CLI's functionality to ensure it behaves identically to the original Node.js version. Pay close attention to areas involving file system access, network requests, environment variables, and process management.

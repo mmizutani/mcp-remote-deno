@@ -1,15 +1,15 @@
-import { OAuthClientProvider, UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import { OAuthCallbackServerOptions } from './types'
-import express from 'express'
-import net from 'net'
-import crypto from 'crypto'
+import { type OAuthClientProvider, UnauthorizedError } from 'npm:@modelcontextprotocol/sdk/client/auth.js'
+import { SSEClientTransport } from 'npm:@modelcontextprotocol/sdk/client/sse.js'
+import type { Transport } from 'npm:@modelcontextprotocol/sdk/shared/transport.js'
+import type { OAuthCallbackServerOptions } from './types.ts'
+import express from 'npm:express'
+import net from 'node:net'
+import crypto from 'node:crypto'
 
-// Package version from package.json
-export const MCP_REMOTE_VERSION = require('../../package.json').version
+// Package version from deno.json (set a constant for now)
+export const MCP_REMOTE_VERSION = '1.0.0' // TODO: Find better way to get version in Deno
 
-const pid = process.pid
+const pid = Deno.pid
 export function log(str: string, ...rest: unknown[]) {
   // Using stderr so that it doesn't interfere with stdout
   console.error(`[${pid}] ${str}`, ...rest)

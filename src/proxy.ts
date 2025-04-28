@@ -1,19 +1,20 @@
 #!/usr/bin/env node
+/// <reference lib="deno.ns" />
 
 /**
  * MCP Proxy with OAuth support
  * A bidirectional proxy between a local STDIO MCP server and a remote SSE server with OAuth authentication.
  *
- * Run with: npx tsx proxy.ts https://example.remote/server [callback-port]
+ * Run with: deno run --allow-net --allow-env --allow-read --allow-run src/proxy.ts https://example.remote/server [callback-port]
  *
  * If callback-port is not specified, an available port will be automatically selected.
  */
 
-import { EventEmitter } from 'events'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { connectToRemoteServer, log, mcpProxy, parseCommandLineArgs, setupSignalHandlers, getServerUrlHash } from './lib/utils'
-import { NodeOAuthClientProvider } from './lib/node-oauth-client-provider'
-import { coordinateAuth } from './lib/coordination'
+import { EventEmitter } from 'node:events'
+import { StdioServerTransport } from 'npm:@modelcontextprotocol/sdk/server/stdio.js'
+import { connectToRemoteServer, log, mcpProxy, parseCommandLineArgs, setupSignalHandlers, getServerUrlHash } from './lib/utils.ts'
+import { NodeOAuthClientProvider } from './lib/node-oauth-client-provider.ts'
+import { coordinateAuth } from './lib/coordination.ts'
 
 /**
  * Main function to run the proxy
@@ -94,16 +95,16 @@ to the CA certificate file. If using claude_desktop_config.json, this might look
         `)
     }
     server.close()
-    process.exit(1)
+    Deno.exit(1)
   }
 }
 
 // Parse command-line arguments and run the proxy
-parseCommandLineArgs(process.argv.slice(2), 3334, 'Usage: npx tsx proxy.ts <https://server-url> [callback-port]')
+parseCommandLineArgs(Deno.args, 3334, 'Usage: deno run src/proxy.ts <https://server-url> [callback-port]')
   .then(({ serverUrl, callbackPort, headers }) => {
     return runProxy(serverUrl, callbackPort, headers)
   })
   .catch((error) => {
     log('Fatal error:', error)
-    process.exit(1)
+    Deno.exit(1)
   })

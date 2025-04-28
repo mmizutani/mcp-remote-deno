@@ -1,15 +1,15 @@
-import open from 'open'
-import { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
+import open from 'npm:open'
+import { OAuthClientProvider } from 'npm:@modelcontextprotocol/sdk/client/auth.js'
 import {
   OAuthClientInformation,
   OAuthClientInformationFull,
   OAuthClientInformationSchema,
   OAuthTokens,
   OAuthTokensSchema,
-} from '@modelcontextprotocol/sdk/shared/auth.js'
-import type { OAuthProviderOptions } from './types'
-import { readJsonFile, writeJsonFile, readTextFile, writeTextFile } from './mcp-auth-config'
-import { getServerUrlHash, log, MCP_REMOTE_VERSION } from './utils'
+} from 'npm:@modelcontextprotocol/sdk/shared/auth.js'
+import type { OAuthProviderOptions } from './types.ts'
+import { readJsonFile, writeJsonFile, readTextFile, writeTextFile } from './mcp-auth-config.ts'
+import { getServerUrlHash, log, MCP_REMOTE_VERSION } from './utils.ts'
 
 /**
  * Implements the OAuthClientProvider interface for Node.js environments.

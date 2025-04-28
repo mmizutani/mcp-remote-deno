@@ -1,7 +1,6 @@
-import path from 'path'
-import os from 'os'
-import fs from 'fs/promises'
-import { log, MCP_REMOTE_VERSION } from './utils'
+import path from 'node:path'
+import os from 'node:os'
+import { log, MCP_REMOTE_VERSION } from './utils.ts'
 
 /**
  * MCP Remote Authentication Configuration
@@ -82,7 +81,7 @@ export async function deleteLockfile(serverUrlHash: string): Promise<void> {
  * @returns The path to the configuration directory
  */
 export function getConfigDir(): string {
-  const baseConfigDir = process.env.MCP_REMOTE_CONFIG_DIR || path.join(os.homedir(), '.mcp-auth')
+  const baseConfigDir = Deno.env.get('MCP_REMOTE_CONFIG_DIR') || path.join(os.homedir(), '.mcp-auth')
   // Add a version subdirectory so we don't need to worry about backwards/forwards compatibility yet
   return path.join(baseConfigDir, `mcp-remote-${MCP_REMOTE_VERSION}`)
 }
@@ -93,7 +92,7 @@ export function getConfigDir(): string {
 export async function ensureConfigDir(): Promise<void> {
   try {
     const configDir = getConfigDir()
-    await fs.mkdir(configDir, { recursive: true })
+    await Deno.mkdir(configDir, { recursive: true })
   } catch (error) {
     log('Error creating config directory:', error)
     throw error
@@ -119,10 +118,10 @@ export function getConfigFilePath(serverUrlHash: string, filename: string): stri
 export async function deleteConfigFile(serverUrlHash: string, filename: string): Promise<void> {
   try {
     const filePath = getConfigFilePath(serverUrlHash, filename)
-    await fs.unlink(filePath)
+    await Deno.remove(filePath)
   } catch (error) {
     // Ignore if file doesn't exist
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+    if ((error as Deno.errors.NotFound).name !== 'NotFound') {
       log(`Error deleting ${filename}:`, error)
     }
   }
@@ -140,12 +139,12 @@ export async function readJsonFile<T>(serverUrlHash: string, filename: string, s
     await ensureConfigDir()
 
     const filePath = getConfigFilePath(serverUrlHash, filename)
-    const content = await fs.readFile(filePath, 'utf-8')
+    const content = await Deno.readTextFile(filePath)
     const result = await schema.parseAsync(JSON.parse(content))
     // console.log({ filename: result })
     return result
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if (error instanceof Deno.errors.NotFound) {
       // console.log(`File ${filename} does not exist`)
       return undefined
     }
@@ -164,7 +163,7 @@ export async function writeJsonFile(serverUrlHash: string, filename: string, dat
   try {
     await ensureConfigDir()
     const filePath = getConfigFilePath(serverUrlHash, filename)
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
+    await Deno.writeTextFile(filePath, JSON.stringify(data, null, 2))
   } catch (error) {
     log(`Error writing ${filename}:`, error)
     throw error
@@ -182,7 +181,7 @@ export async function readTextFile(serverUrlHash: string, filename: string, erro
   try {
     await ensureConfigDir()
     const filePath = getConfigFilePath(serverUrlHash, filename)
-    return await fs.readFile(filePath, 'utf-8')
+    return await Deno.readTextFile(filePath)
   } catch (error) {
     throw new Error(errorMessage || `Error reading ${filename}`)
   }
@@ -198,7 +197,7 @@ export async function writeTextFile(serverUrlHash: string, filename: string, tex
   try {
     await ensureConfigDir()
     const filePath = getConfigFilePath(serverUrlHash, filename)
-    await fs.writeFile(filePath, text, 'utf-8')
+    await Deno.writeTextFile(filePath, text)
   } catch (error) {
     log(`Error writing ${filename}:`, error)
     throw error

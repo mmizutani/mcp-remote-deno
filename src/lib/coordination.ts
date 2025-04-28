@@ -1,9 +1,9 @@
-import { checkLockfile, createLockfile, deleteLockfile, getConfigFilePath, LockfileData } from './mcp-auth-config'
-import { EventEmitter } from 'events'
-import { Server } from 'http'
-import express from 'express'
-import { AddressInfo } from 'net'
-import { log, setupOAuthCallbackServerWithLongPoll } from './utils'
+import { checkLockfile, createLockfile, deleteLockfile, getConfigFilePath, type LockfileData } from './mcp-auth-config.ts'
+import type { EventEmitter } from 'node:events'
+import type { Server } from 'node:http'
+import express from 'npm:express'
+import type { AddressInfo } from 'node:net'
+import { log, setupOAuthCallbackServerWithLongPoll } from './utils.ts'
 
 /**
  * Checks if a process with the given PID is running
@@ -12,10 +12,37 @@ import { log, setupOAuthCallbackServerWithLongPoll } from './utils'
  */
 export async function isPidRunning(pid: number): Promise<boolean> {
   try {
-    process.kill(pid, 0) // Doesn't kill the process, just checks if it exists
-    return true
+    // Deno doesn't have a direct equivalent to process.kill(pid, 0)
+    // On non-Windows platforms, we can try to use kill system call to check
+    if (Deno.build.os !== 'windows') {
+      try {
+        // Using Deno.run to check if process exists
+        const command = new Deno.Command('kill', {
+          args: ['-0', pid.toString()],
+          stdout: 'null',
+          stderr: 'null',
+        });
+        const { success } = await command.output();
+        return success;
+      } catch {
+        return false;
+      }
+    } else {
+      // On Windows, use tasklist to check if process exists
+      try {
+        const command = new Deno.Command('tasklist', {
+          args: ['/FI', `PID eq ${pid}`, '/NH'],
+          stdout: 'piped',
+        });
+        const { stdout } = await command.output();
+        const output = new TextDecoder().decode(stdout);
+        return output.includes(pid.toString());
+      } catch {
+        return false;
+      }
+    }
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -71,11 +98,12 @@ export async function waitForAuthentication(port: number): Promise<boolean> {
 
       if (response.status === 200) {
         // Auth completed, but we don't return the code anymore
-        log(`Authentication completed by other instance`)
+        log('Authentication completed by other instance')
         return true
-      } else if (response.status === 202) {
+      }
+      if (response.status === 202) {
         // Continue polling
-        log(`Authentication still in progress`)
+        log('Authentication still in progress')
         await new Promise((resolve) => setTimeout(resolve, 1000))
       } else {
         log(`Unexpected response status: ${response.status}`)
@@ -101,7 +129,7 @@ export async function coordinateAuth(
   events: EventEmitter,
 ): Promise<{ server: Server; waitForAuthCode: () => Promise<string>; skipBrowserAuth: boolean }> {
   // Check for a lockfile (disabled on Windows for the time being)
-  const lockData = process.platform === 'win32' ? null : await checkLockfile(serverUrlHash)
+  const lockData = Deno.build.os === 'windows' ? null : await checkLockfile(serverUrlHash)
 
   // If there's a valid lockfile, try to use the existing auth process
   if (lockData && (await isLockValid(lockData))) {
@@ -128,9 +156,8 @@ export async function coordinateAuth(
           waitForAuthCode: dummyWaitForAuthCode,
           skipBrowserAuth: true,
         }
-      } else {
-        log('Taking over authentication process...')
       }
+      log('Taking over authentication process...')
     } catch (error) {
       log(`Error waiting for authentication: ${error}`)
     }
@@ -144,7 +171,7 @@ export async function coordinateAuth(
   }
 
   // Create our own lockfile
-  const { server, waitForAuthCode, authCompletedPromise } = setupOAuthCallbackServerWithLongPoll({
+  const { server, waitForAuthCode, authCompletedPromise: _ } = setupOAuthCallbackServerWithLongPoll({
     port: callbackPort,
     path: '/oauth/callback',
     events,
@@ -154,8 +181,8 @@ export async function coordinateAuth(
   const address = server.address() as AddressInfo
   const actualPort = address.port
 
-  log(`Creating lockfile for server ${serverUrlHash} with process ${process.pid} on port ${actualPort}`)
-  await createLockfile(serverUrlHash, process.pid, actualPort)
+  log(`Creating lockfile for server ${serverUrlHash} with process ${Deno.pid} on port ${actualPort}`)
+  await createLockfile(serverUrlHash, Deno.pid, actualPort)
 
   // Make sure lockfile is deleted on process exit
   const cleanupHandler = async () => {
@@ -167,18 +194,29 @@ export async function coordinateAuth(
     }
   }
 
-  process.once('exit', () => {
+  // Setup exit handlers for Deno
+  // Note: Deno doesn't have process.once but we can use addEventListener
+  // Use unload event instead of beforeunload signal
+  addEventListener("unload", () => {
     try {
-      // Synchronous version for 'exit' event since we can't use async here
+      // Synchronous cleanup
       const configPath = getConfigFilePath(serverUrlHash, 'lock.json')
-      require('fs').unlinkSync(configPath)
-    } catch {}
-  })
+      // Use Deno's synchronous file API
+      try {
+        Deno.removeSync(configPath);
+      } catch (_) {
+        // Ignore errors
+      }
+    } catch (_) {
+      // Ignore errors during exit
+    }
+  });
 
   // Also handle SIGINT separately
-  process.once('SIGINT', async () => {
-    await cleanupHandler()
-  })
+  Deno.addSignalListener("SIGINT", async () => {
+    await cleanupHandler();
+    Deno.exit(0);
+  });
 
   return {
     server,
