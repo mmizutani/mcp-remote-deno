@@ -30,4 +30,21 @@ Here is a plan to transform your Node.js CLI package into a Deno CLI project, fo
     - [x] Run the main task using `deno task proxy:start <args...>`.
     - [x] Thoroughly test the CLI's functionality to ensure it behaves identically to the original Node.js version. Pay close attention to areas involving file system access, network requests, environment variables, and process management.
 
+6. **Refine Type Safety & Linting:**
+    - [x] Address remaining `any` types and other linter warnings identified by `deno lint`.
+    - [x] Improve type definitions, especially for external library interactions (e.g., express request/response types if kept).
+    - [x] Run `deno fmt` to ensure consistent code formatting.
+7. **Improve Dependency Management:**
+    - [ ] Evaluate replacing `npm:express` with a native Deno HTTP server solution (e.g., `Deno.serve` or from `std/http`).
+    - [ ] Evaluate replacing `npm:open` with a Deno equivalent or platform-specific commands.
+8. **Implement Testing:**
+    - [ ] Add unit tests for key utility functions (e.g., in `utils.ts`, `mcp-auth-config.ts`).
+    - [ ] Add integration tests for the core proxy (`proxy.ts`) and client (`client.ts`) functionality.
+9. **Enhance Documentation:**
+    - [ ] Update `README.md` with Deno-specific installation, usage, and contribution guidelines.
+    - [ ] Add comprehensive TSDoc comments to all exported functions, classes, and interfaces.
+10. **Build & Distribution:**
+    - [ ] Configure `deno publish` settings if intending to publish to deno.land/x.
+    - [ ] Explore using `deno compile` to create standalone executables for different platforms.
+
 This plan prioritizes modifying the existing TypeScript code minimally while adapting the project structure and configuration for Deno. We will start by modifying `deno.json` and `src/proxy.ts`.

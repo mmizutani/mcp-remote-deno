@@ -1,6 +1,6 @@
-import path from 'node:path'
-import os from 'node:os'
-import { log, MCP_REMOTE_VERSION } from './utils.ts'
+import path from "node:path";
+import os from "node:os";
+import { log, MCP_REMOTE_VERSION } from "./utils.ts";
 
 /**
  * MCP Remote Authentication Configuration
@@ -26,9 +26,9 @@ import { log, MCP_REMOTE_VERSION } from './utils.ts'
  * Lockfile data structure
  */
 export interface LockfileData {
-  pid: number
-  port: number
-  timestamp: number
+  pid: number;
+  port: number;
+  timestamp: number;
 }
 
 /**
@@ -37,13 +37,17 @@ export interface LockfileData {
  * @param pid The process ID
  * @param port The port the server is running on
  */
-export async function createLockfile(serverUrlHash: string, pid: number, port: number): Promise<void> {
+export async function createLockfile(
+  serverUrlHash: string,
+  pid: number,
+  port: number,
+): Promise<void> {
   const lockData: LockfileData = {
     pid,
     port,
     timestamp: Date.now(),
-  }
-  await writeJsonFile(serverUrlHash, 'lock.json', lockData)
+  };
+  await writeJsonFile(serverUrlHash, "lock.json", lockData);
 }
 
 /**
@@ -51,20 +55,30 @@ export async function createLockfile(serverUrlHash: string, pid: number, port: n
  * @param serverUrlHash The hash of the server URL
  * @returns The lockfile data or null if it doesn't exist
  */
-export async function checkLockfile(serverUrlHash: string): Promise<LockfileData | null> {
+export async function checkLockfile(
+  serverUrlHash: string,
+): Promise<LockfileData | null> {
   try {
-    const lockfile = await readJsonFile<LockfileData>(serverUrlHash, 'lock.json', {
-      async parseAsync(data: any) {
-        if (typeof data !== 'object' || data === null) return null
-        if (typeof data.pid !== 'number' || typeof data.port !== 'number' || typeof data.timestamp !== 'number') {
-          return null
-        }
-        return data as LockfileData
+    const lockfile = await readJsonFile<LockfileData>(
+      serverUrlHash,
+      "lock.json",
+      {
+        parseAsync(data: unknown) {
+          if (typeof data !== "object" || data === null) return null;
+          if (
+            typeof (data as LockfileData).pid !== "number" ||
+            typeof (data as LockfileData).port !== "number" ||
+            typeof (data as LockfileData).timestamp !== "number"
+          ) {
+            return null;
+          }
+          return data as LockfileData;
+        },
       },
-    })
-    return lockfile || null
+    );
+    return lockfile || null;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -73,7 +87,7 @@ export async function checkLockfile(serverUrlHash: string): Promise<LockfileData
  * @param serverUrlHash The hash of the server URL
  */
 export async function deleteLockfile(serverUrlHash: string): Promise<void> {
-  await deleteConfigFile(serverUrlHash, 'lock.json')
+  await deleteConfigFile(serverUrlHash, "lock.json");
 }
 
 /**
@@ -81,9 +95,10 @@ export async function deleteLockfile(serverUrlHash: string): Promise<void> {
  * @returns The path to the configuration directory
  */
 export function getConfigDir(): string {
-  const baseConfigDir = Deno.env.get('MCP_REMOTE_CONFIG_DIR') || path.join(os.homedir(), '.mcp-auth')
+  const baseConfigDir = Deno.env.get("MCP_REMOTE_CONFIG_DIR") ||
+    path.join(os.homedir(), ".mcp-auth");
   // Add a version subdirectory so we don't need to worry about backwards/forwards compatibility yet
-  return path.join(baseConfigDir, `mcp-remote-${MCP_REMOTE_VERSION}`)
+  return path.join(baseConfigDir, `mcp-remote-${MCP_REMOTE_VERSION}`);
 }
 
 /**
@@ -91,11 +106,11 @@ export function getConfigDir(): string {
  */
 export async function ensureConfigDir(): Promise<void> {
   try {
-    const configDir = getConfigDir()
-    await Deno.mkdir(configDir, { recursive: true })
+    const configDir = getConfigDir();
+    await Deno.mkdir(configDir, { recursive: true });
   } catch (error) {
-    log('Error creating config directory:', error)
-    throw error
+    log("Error creating config directory:", error);
+    throw error;
   }
 }
 
@@ -105,9 +120,12 @@ export async function ensureConfigDir(): Promise<void> {
  * @param filename The name of the file
  * @returns The absolute file path
  */
-export function getConfigFilePath(serverUrlHash: string, filename: string): string {
-  const configDir = getConfigDir()
-  return path.join(configDir, `${serverUrlHash}_${filename}`)
+export function getConfigFilePath(
+  serverUrlHash: string,
+  filename: string,
+): string {
+  const configDir = getConfigDir();
+  return path.join(configDir, `${serverUrlHash}_${filename}`);
 }
 
 /**
@@ -115,14 +133,17 @@ export function getConfigFilePath(serverUrlHash: string, filename: string): stri
  * @param serverUrlHash The hash of the server URL
  * @param filename The name of the file to delete
  */
-export async function deleteConfigFile(serverUrlHash: string, filename: string): Promise<void> {
+export async function deleteConfigFile(
+  serverUrlHash: string,
+  filename: string,
+): Promise<void> {
   try {
-    const filePath = getConfigFilePath(serverUrlHash, filename)
-    await Deno.remove(filePath)
-  } catch (error) {
+    const filePath = getConfigFilePath(serverUrlHash, filename);
+    await Deno.remove(filePath);
+  } catch (_error) {
     // Ignore if file doesn't exist
-    if ((error as Deno.errors.NotFound).name !== 'NotFound') {
-      log(`Error deleting ${filename}:`, error)
+    if ((_error as Deno.errors.NotFound).name !== "NotFound") {
+      log(`Error deleting ${filename}:`, _error);
     }
   }
 }
@@ -134,22 +155,25 @@ export async function deleteConfigFile(serverUrlHash: string, filename: string):
  * @param schema The schema to validate against
  * @returns The parsed file content or undefined if the file doesn't exist
  */
-export async function readJsonFile<T>(serverUrlHash: string, filename: string, schema: any): Promise<T | undefined> {
+export async function readJsonFile<T>(
+  serverUrlHash: string,
+  filename: string,
+  schema: { parseAsync: (data: unknown) => Promise<T | null> | T | null },
+): Promise<T | undefined> {
   try {
-    await ensureConfigDir()
+    await ensureConfigDir();
 
-    const filePath = getConfigFilePath(serverUrlHash, filename)
-    const content = await Deno.readTextFile(filePath)
-    const result = await schema.parseAsync(JSON.parse(content))
-    // console.log({ filename: result })
-    return result
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
+    const filePath = getConfigFilePath(serverUrlHash, filename);
+    const content = await Deno.readTextFile(filePath);
+    const result = await schema.parseAsync(JSON.parse(content));
+    return result ?? undefined;
+  } catch (_error) {
+    if (_error instanceof Deno.errors.NotFound) {
       // console.log(`File ${filename} does not exist`)
-      return undefined
+      return undefined;
     }
-    log(`Error reading ${filename}:`, error)
-    return undefined
+    log(`Error reading ${filename}:`, _error);
+    return undefined;
   }
 }
 
@@ -159,14 +183,18 @@ export async function readJsonFile<T>(serverUrlHash: string, filename: string, s
  * @param filename The name of the file to write
  * @param data The data to write
  */
-export async function writeJsonFile(serverUrlHash: string, filename: string, data: any): Promise<void> {
+export async function writeJsonFile(
+  serverUrlHash: string,
+  filename: string,
+  data: unknown,
+): Promise<void> {
   try {
-    await ensureConfigDir()
-    const filePath = getConfigFilePath(serverUrlHash, filename)
-    await Deno.writeTextFile(filePath, JSON.stringify(data, null, 2))
-  } catch (error) {
-    log(`Error writing ${filename}:`, error)
-    throw error
+    await ensureConfigDir();
+    const filePath = getConfigFilePath(serverUrlHash, filename);
+    await Deno.writeTextFile(filePath, JSON.stringify(data, null, 2));
+  } catch (_error) {
+    log(`Error writing ${filename}:`, _error);
+    throw _error;
   }
 }
 
@@ -177,13 +205,17 @@ export async function writeJsonFile(serverUrlHash: string, filename: string, dat
  * @param errorMessage Optional custom error message
  * @returns The file content as a string
  */
-export async function readTextFile(serverUrlHash: string, filename: string, errorMessage?: string): Promise<string> {
+export async function readTextFile(
+  serverUrlHash: string,
+  filename: string,
+  errorMessage?: string,
+): Promise<string> {
   try {
-    await ensureConfigDir()
-    const filePath = getConfigFilePath(serverUrlHash, filename)
-    return await Deno.readTextFile(filePath)
-  } catch (error) {
-    throw new Error(errorMessage || `Error reading ${filename}`)
+    await ensureConfigDir();
+    const filePath = getConfigFilePath(serverUrlHash, filename);
+    return await Deno.readTextFile(filePath);
+  } catch (_error) {
+    throw new Error(errorMessage || `Error reading ${filename}`);
   }
 }
 
@@ -193,13 +225,17 @@ export async function readTextFile(serverUrlHash: string, filename: string, erro
  * @param filename The name of the file to write
  * @param text The text to write
  */
-export async function writeTextFile(serverUrlHash: string, filename: string, text: string): Promise<void> {
+export async function writeTextFile(
+  serverUrlHash: string,
+  filename: string,
+  text: string,
+): Promise<void> {
   try {
-    await ensureConfigDir()
-    const filePath = getConfigFilePath(serverUrlHash, filename)
-    await Deno.writeTextFile(filePath, text)
+    await ensureConfigDir();
+    const filePath = getConfigFilePath(serverUrlHash, filename);
+    await Deno.writeTextFile(filePath, text);
   } catch (error) {
-    log(`Error writing ${filename}:`, error)
-    throw error
+    log(`Error writing ${filename}:`, error);
+    throw error;
   }
 }

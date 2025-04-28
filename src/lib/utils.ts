@@ -1,66 +1,74 @@
-import { type OAuthClientProvider, UnauthorizedError } from 'npm:@modelcontextprotocol/sdk/client/auth.js'
-import { SSEClientTransport } from 'npm:@modelcontextprotocol/sdk/client/sse.js'
-import type { Transport } from 'npm:@modelcontextprotocol/sdk/shared/transport.js'
-import type { OAuthCallbackServerOptions } from './types.ts'
-import express from 'npm:express'
-import net from 'node:net'
-import crypto from 'node:crypto'
+import {
+  type OAuthClientProvider,
+  UnauthorizedError,
+} from "npm:@modelcontextprotocol/sdk/client/auth.js";
+import { SSEClientTransport } from "npm:@modelcontextprotocol/sdk/client/sse.js";
+import type { Transport } from "npm:@modelcontextprotocol/sdk/shared/transport.js";
+import type { OAuthCallbackServerOptions } from "./types.ts";
+import express from "npm:express";
+import net from "node:net";
+import crypto from "node:crypto";
 
 // Package version from deno.json (set a constant for now)
-export const MCP_REMOTE_VERSION = '1.0.0' // TODO: Find better way to get version in Deno
+export const MCP_REMOTE_VERSION = "1.0.0"; // TODO: Find better way to get version in Deno
 
-const pid = Deno.pid
+const pid = Deno.pid;
 export function log(str: string, ...rest: unknown[]) {
   // Using stderr so that it doesn't interfere with stdout
-  console.error(`[${pid}] ${str}`, ...rest)
+  console.error(`[${pid}] ${str}`, ...rest);
 }
 
 /**
  * Creates a bidirectional proxy between two transports
  * @param params The transport connections to proxy between
  */
-export function mcpProxy({ transportToClient, transportToServer }: { transportToClient: Transport; transportToServer: Transport }) {
-  let transportToClientClosed = false
-  let transportToServerClosed = false
+export function mcpProxy(
+  { transportToClient, transportToServer }: {
+    transportToClient: Transport;
+    transportToServer: Transport;
+  },
+) {
+  let transportToClientClosed = false;
+  let transportToServerClosed = false;
 
   transportToClient.onmessage = (message) => {
     // @ts-expect-error TODO
-    log('[Local→Remote]', message.method || message.id)
-    transportToServer.send(message).catch(onServerError)
-  }
+    log("[Local→Remote]", message.method || message.id);
+    transportToServer.send(message).catch(onServerError);
+  };
 
   transportToServer.onmessage = (message) => {
     // @ts-expect-error TODO: fix this type
-    log('[Remote→Local]', message.method || message.id)
-    transportToClient.send(message).catch(onClientError)
-  }
+    log("[Remote→Local]", message.method || message.id);
+    transportToClient.send(message).catch(onClientError);
+  };
 
   transportToClient.onclose = () => {
     if (transportToServerClosed) {
-      return
+      return;
     }
 
-    transportToClientClosed = true
-    transportToServer.close().catch(onServerError)
-  }
+    transportToClientClosed = true;
+    transportToServer.close().catch(onServerError);
+  };
 
   transportToServer.onclose = () => {
     if (transportToClientClosed) {
-      return
+      return;
     }
-    transportToServerClosed = true
-    transportToClient.close().catch(onClientError)
-  }
+    transportToServerClosed = true;
+    transportToClient.close().catch(onClientError);
+  };
 
-  transportToClient.onerror = onClientError
-  transportToServer.onerror = onServerError
+  transportToClient.onerror = onClientError;
+  transportToServer.onerror = onServerError;
 
   function onClientError(error: Error) {
-    log('Error from local client:', error)
+    log("Error from local client:", error);
   }
 
   function onServerError(error: Error) {
-    log('Error from remote server:', error)
+    log("Error from remote server:", error);
   }
 }
 
@@ -80,8 +88,8 @@ export async function connectToRemoteServer(
   waitForAuthCode: () => Promise<string>,
   skipBrowserAuth = false,
 ): Promise<SSEClientTransport> {
-  log(`[${pid}] Connecting to remote server: ${serverUrl}`)
-  const url = new URL(serverUrl)
+  log(`[${pid}] Connecting to remote server: ${serverUrl}`);
+  const url = new URL(serverUrl);
 
   // Create transport with eventSourceInit to pass Authorization header if present
   const eventSourceInit = {
@@ -92,7 +100,9 @@ export async function connectToRemoteServer(
           headers: {
             ...(init?.headers as Record<string, string> | undefined),
             ...headers,
-            ...(tokens?.access_token ? { Authorization: `Bearer ${tokens.access_token}` } : {}),
+            ...(tokens?.access_token
+              ? { Authorization: `Bearer ${tokens.access_token}` }
+              : {}),
             Accept: "text/event-stream",
           } as Record<string, string>,
         })
@@ -104,39 +114,47 @@ export async function connectToRemoteServer(
     authProvider,
     requestInit: { headers },
     eventSourceInit,
-  })
+  });
 
   try {
-    await transport.start()
-    log('Connected to remote server')
-    return transport
+    await transport.start();
+    log("Connected to remote server");
+    return transport;
   } catch (error) {
-    if (error instanceof UnauthorizedError || (error instanceof Error && error.message.includes('Unauthorized'))) {
+    if (
+      error instanceof UnauthorizedError ||
+      (error instanceof Error && error.message.includes("Unauthorized"))
+    ) {
       if (skipBrowserAuth) {
-        log('Authentication required but skipping browser auth - using shared auth')
+        log(
+          "Authentication required but skipping browser auth - using shared auth",
+        );
       } else {
-        log('Authentication required. Waiting for authorization...')
+        log("Authentication required. Waiting for authorization...");
       }
 
       // Wait for the authorization code from the callback
-      const code = await waitForAuthCode()
+      const code = await waitForAuthCode();
 
       try {
-        log('Completing authorization...')
-        await transport.finishAuth(code)
+        log("Completing authorization...");
+        await transport.finishAuth(code);
 
         // Create a new transport after auth
-        const newTransport = new SSEClientTransport(url, { authProvider, requestInit: { headers } })
-        await newTransport.start()
-        log('Connected to remote server after authentication')
-        return newTransport
+        const newTransport = new SSEClientTransport(url, {
+          authProvider,
+          requestInit: { headers },
+        });
+        await newTransport.start();
+        log("Connected to remote server after authentication");
+        return newTransport;
       } catch (authError) {
-        log('Authorization error:', authError)
-        throw authError
+        log("Authorization error:", authError);
+        throw authError;
       }
     } else {
-      log('Connection error:', error)
-      throw error
+      log("Connection error:", error);
+      throw error;
     }
   }
 }
@@ -146,92 +164,96 @@ export async function connectToRemoteServer(
  * @param options The server options
  * @returns An object with the server, authCode, and waitForAuthCode function
  */
-export function setupOAuthCallbackServerWithLongPoll(options: OAuthCallbackServerOptions) {
-  let authCode: string | null = null
-  const app = express()
+export function setupOAuthCallbackServerWithLongPoll(
+  options: OAuthCallbackServerOptions,
+) {
+  let authCode: string | null = null;
+  const app = express();
 
   // Create a promise to track when auth is completed
-  let authCompletedResolve: (code: string) => void
+  let authCompletedResolve: (code: string) => void;
   const authCompletedPromise = new Promise<string>((resolve) => {
-    authCompletedResolve = resolve
-  })
+    authCompletedResolve = resolve;
+  });
 
   // Long-polling endpoint
-  app.get('/wait-for-auth', (req, res) => {
+  app.get("/wait-for-auth", (req, res) => {
     if (authCode) {
       // Auth already completed - just return 200 without the actual code
       // Secondary instances will read tokens from disk
-      log('Auth already completed, returning 200')
-      res.status(200).send('Authentication completed')
-      return
+      log("Auth already completed, returning 200");
+      res.status(200).send("Authentication completed");
+      return;
     }
 
-    if (req.query.poll === 'false') {
-      log('Client requested no long poll, responding with 202')
-      res.status(202).send('Authentication in progress')
-      return
+    if (req.query.poll === "false") {
+      log("Client requested no long poll, responding with 202");
+      res.status(202).send("Authentication in progress");
+      return;
     }
 
     // Long poll - wait for up to 30 seconds
     const longPollTimeout = setTimeout(() => {
-      log('Long poll timeout reached, responding with 202')
-      res.status(202).send('Authentication in progress')
-    }, 30000)
+      log("Long poll timeout reached, responding with 202");
+      res.status(202).send("Authentication in progress");
+    }, 30000);
 
     // If auth completes while we're waiting, send the response immediately
     authCompletedPromise
       .then(() => {
-        clearTimeout(longPollTimeout)
+        clearTimeout(longPollTimeout);
         if (!res.headersSent) {
-          log('Auth completed during long poll, responding with 200')
-          res.status(200).send('Authentication completed')
+          log("Auth completed during long poll, responding with 200");
+          res.status(200).send("Authentication completed");
         }
       })
       .catch(() => {
-        clearTimeout(longPollTimeout)
+        clearTimeout(longPollTimeout);
         if (!res.headersSent) {
-          log('Auth failed during long poll, responding with 500')
-          res.status(500).send('Authentication failed')
+          log("Auth failed during long poll, responding with 500");
+          res.status(500).send("Authentication failed");
         }
-      })
-  })
+      });
+  });
 
   // OAuth callback endpoint
   app.get(options.path, (req, res) => {
-    const code = req.query.code as string | undefined
+    const code = req.query.code as string | undefined;
     if (!code) {
-      res.status(400).send('Error: No authorization code received')
-      return
+      res.status(400).send("Error: No authorization code received");
+      return;
     }
 
-    authCode = code
-    log('Auth code received, resolving promise')
-    authCompletedResolve(code)
+    authCode = code;
+    log("Auth code received, resolving promise");
+    authCompletedResolve(code);
 
-    res.send('Authorization successful! You may close this window and return to the CLI.')
+    res.send(
+      "Authorization successful! You may close this window and return to the CLI.",
+    );
 
     // Notify main flow that auth code is available
-    options.events.emit('auth-code-received', code)
-  })
+    options.events.emit("auth-code-received", code);
+  });
 
   const server = app.listen(options.port, () => {
-    log(`OAuth callback server running at http://127.0.0.1:${options.port}`)
-  })
+    log(`OAuth callback server running at http://127.0.0.1:${options.port}`);
+  });
 
   const waitForAuthCode = (): Promise<string> => {
     return new Promise((resolve) => {
       if (authCode) {
-        resolve(authCode)
-        return
+        resolve(authCode);
+        return;
       }
 
-      options.events.once('auth-code-received', (code) => {
-        resolve(code)
-      })
-    })
-  }
+      options.events.once("auth-code-received", (code) => {
+        resolve(code);
+      });
+    });
+  };
 
-  return { server, authCode, waitForAuthCode, authCompletedPromise }
+  return { server, authCode, waitForAuthCode, authCompletedPromise };
 }
 
 /**
@@ -240,8 +262,9 @@ export function setupOAuthCallbackServerWithLongPoll(options: OAuthCallbackServe
  * @returns An object with the server, authCode, and waitForAuthCode function
  */
 export function setupOAuthCallbackServer(options: OAuthCallbackServerOptions) {
-  const { server, authCode, waitForAuthCode } = setupOAuthCallbackServerWithLongPoll(options)
-  return { server, authCode, waitForAuthCode }
+  const { server, authCode, waitForAuthCode } =
+    setupOAuthCallbackServerWithLongPoll(options);
+  return { server, authCode, waitForAuthCode };
 }
 
 /**
@@ -249,29 +272,31 @@ export function setupOAuthCallbackServer(options: OAuthCallbackServerOptions) {
  * @param preferredPort Optional preferred port to try first
  * @returns A promise that resolves to an available port number
  */
-export async function findAvailablePort(preferredPort?: number): Promise<number> {
+export function findAvailablePort(
+  preferredPort?: number,
+): Promise<number> {
   return new Promise((resolve, reject) => {
-    const server = net.createServer()
+    const server = net.createServer();
 
-    server.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
+    server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
         // If preferred port is in use, get a random port
-        server.listen(0)
+        server.listen(0);
       } else {
-        reject(err)
+        reject(err);
       }
-    })
+    });
 
-    server.on('listening', () => {
-      const { port } = server.address() as net.AddressInfo
+    server.on("listening", () => {
+      const { port } = server.address() as net.AddressInfo;
       server.close(() => {
-        resolve(port)
-      })
-    })
+        resolve(port);
+      });
+    });
 
     // Try preferred port first, or get a random port
-    server.listen(preferredPort || 0)
-  })
+    server.listen(preferredPort || 0);
+  });
 }
 
 /**
@@ -281,75 +306,85 @@ export async function findAvailablePort(preferredPort?: number): Promise<number>
  * @param usage Usage message to show on error
  * @returns A promise that resolves to an object with parsed serverUrl, callbackPort and headers
  */
-export async function parseCommandLineArgs(args: string[], defaultPort: number, usage: string) {
+export async function parseCommandLineArgs(
+  args: string[],
+  defaultPort: number,
+  usage: string,
+) {
   // Check for help flag
-  if (args.includes('--help') || args.includes('-h')) {
-    log(usage)
-    Deno.exit(0)
+  if (args.includes("--help") || args.includes("-h")) {
+    log(usage);
+    Deno.exit(0);
   }
 
   // Process headers
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = {};
   args.forEach((arg, i) => {
-    if (arg === '--header' && i < args.length - 1) {
-      const value = args[i + 1]
-      const match = value.match(/^([A-Za-z0-9_-]+):(.*)$/)
+    if (arg === "--header" && i < args.length - 1) {
+      const value = args[i + 1];
+      const match = value.match(/^([A-Za-z0-9_-]+):(.*)$/);
       if (match) {
-        headers[match[1]] = match[2]
+        headers[match[1]] = match[2];
       } else {
-        log(`Warning: ignoring invalid header argument: ${value}`)
+        log(`Warning: ignoring invalid header argument: ${value}`);
       }
-      args.splice(i, 2)
+      args.splice(i, 2);
     }
-  })
+  });
 
-  const serverUrl = args[0]
-  const specifiedPort = args[1] ? Number.parseInt(args[1], 10) : undefined
-  const allowHttp = args.includes('--allow-http')
+  const serverUrl = args[0];
+  const specifiedPort = args[1] ? Number.parseInt(args[1], 10) : undefined;
+  const allowHttp = args.includes("--allow-http");
 
   if (!serverUrl) {
-    log(usage)
-    Deno.exit(1)
+    log(usage);
+    Deno.exit(1);
   }
 
-  const url = new URL(serverUrl)
-  const isLocalhost = (url.hostname === 'localhost' || url.hostname === '127.0.0.1') && url.protocol === 'http:'
+  const url = new URL(serverUrl);
+  const isLocalhost =
+    (url.hostname === "localhost" || url.hostname === "127.0.0.1") &&
+    url.protocol === "http:";
 
-  if (!(url.protocol === 'https:' || isLocalhost || allowHttp)) {
-    log('Error: Non-HTTPS URLs are only allowed for localhost or when --allow-http flag is provided')
-    log(usage)
-    Deno.exit(1)
+  if (!(url.protocol === "https:" || isLocalhost || allowHttp)) {
+    log(
+      "Error: Non-HTTPS URLs are only allowed for localhost or when --allow-http flag is provided",
+    );
+    log(usage);
+    Deno.exit(1);
   }
 
   // Use the specified port, or find an available one
-  const callbackPort = specifiedPort || (await findAvailablePort(defaultPort))
+  const callbackPort = specifiedPort || (await findAvailablePort(defaultPort));
 
   if (specifiedPort) {
-    log(`Using specified callback port: ${callbackPort}`)
+    log(`Using specified callback port: ${callbackPort}`);
   } else {
-    log(`Using automatically selected callback port: ${callbackPort}`)
+    log(`Using automatically selected callback port: ${callbackPort}`);
   }
 
   if (Object.keys(headers).length > 0) {
-    log(`Using custom headers: ${JSON.stringify(headers)}`)
+    log(`Using custom headers: ${JSON.stringify(headers)}`);
   }
   // Replace environment variables in headers
   // example `Authorization: Bearer ${TOKEN}` will read process.env.TOKEN
   for (const [key, value] of Object.entries(headers)) {
     headers[key] = value.replace(/\$\{([^}]+)}/g, (match, envVarName) => {
-      const envVarValue = Deno.env.get(envVarName)
+      const envVarValue = Deno.env.get(envVarName);
 
       if (envVarValue !== undefined) {
-        log(`Replacing ${match} with environment value in header '${key}'`)
-        return envVarValue
+        log(`Replacing ${match} with environment value in header '${key}'`);
+        return envVarValue;
       }
 
-      log(`Warning: Environment variable '${envVarName}' not found for header '${key}'.`)
-      return ''
-    })
+      log(
+        `Warning: Environment variable '${envVarName}' not found for header '${key}'.`,
+      );
+      return "";
+    });
   }
 
-  return { serverUrl, callbackPort, headers }
+  return { serverUrl, callbackPort, headers };
 }
 
 /**
@@ -358,21 +393,21 @@ export async function parseCommandLineArgs(args: string[], defaultPort: number, 
  */
 export function setupSignalHandlers(cleanup: () => Promise<void>) {
   Deno.addSignalListener("SIGINT", async () => {
-    log('\nShutting down...')
-    await cleanup()
-    Deno.exit(0)
-  })
+    log("\nShutting down...");
+    await cleanup();
+    Deno.exit(0);
+  });
 
   // For SIGTERM
   try {
     Deno.addSignalListener("SIGTERM", async () => {
-      log('\nReceived SIGTERM. Shutting down...')
-      await cleanup()
-      Deno.exit(0)
-    })
-  } catch (e) {
+      log("\nReceived SIGTERM. Shutting down...");
+      await cleanup();
+      Deno.exit(0);
+    });
+  } catch (_e) {
     // SIGTERM might not be available on all platforms
-    log('SIGTERM handler not available on this platform')
+    log("SIGTERM handler not available on this platform");
   }
 }
 
@@ -382,5 +417,5 @@ export function setupSignalHandlers(cleanup: () => Promise<void>) {
  * @returns The hashed server URL
  */
 export function getServerUrlHash(serverUrl: string): string {
-  return crypto.createHash('md5').update(serverUrl).digest('hex')
+  return crypto.createHash("md5").update(serverUrl).digest("hex");
 }
