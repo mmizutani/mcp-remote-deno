@@ -5,9 +5,9 @@ import {
 import { SSEClientTransport } from "npm:@modelcontextprotocol/sdk/client/sse.js";
 import type { Transport } from "npm:@modelcontextprotocol/sdk/shared/transport.js";
 import type { OAuthCallbackServerOptions } from "./types.ts";
-import express from "npm:express";
 import net from "node:net";
 import crypto from "node:crypto";
+import createServer from "./deno-http-server.ts";
 
 // Package version from deno.json (set a constant for now)
 export const MCP_REMOTE_VERSION = "1.0.0"; // TODO: Find better way to get version in Deno
@@ -160,7 +160,18 @@ export async function connectToRemoteServer(
 }
 
 /**
- * Sets up an Express server to handle OAuth callbacks
+ * Sets up an HTTP server to handle OAuth callbacks
+ * @param options The server options
+ * @returns An object with the server, authCode, and waitForAuthCode function
+ */
+export function setupOAuthCallbackServer(options: OAuthCallbackServerOptions) {
+  const { server, authCode, waitForAuthCode } =
+    setupOAuthCallbackServerWithLongPoll(options);
+  return { server, authCode, waitForAuthCode };
+}
+
+/**
+ * Sets up an HTTP server to handle OAuth callbacks
  * @param options The server options
  * @returns An object with the server, authCode, and waitForAuthCode function
  */
@@ -168,7 +179,7 @@ export function setupOAuthCallbackServerWithLongPoll(
   options: OAuthCallbackServerOptions,
 ) {
   let authCode: string | null = null;
-  const app = express();
+  const app = createServer();
 
   // Create a promise to track when auth is completed
   let authCompletedResolve: (code: string) => void;
@@ -218,7 +229,7 @@ export function setupOAuthCallbackServerWithLongPoll(
 
   // OAuth callback endpoint
   app.get(options.path, (req, res) => {
-    const code = req.query.code as string | undefined;
+    const code = req.query.code;
     if (!code) {
       res.status(400).send("Error: No authorization code received");
       return;
@@ -254,17 +265,6 @@ export function setupOAuthCallbackServerWithLongPoll(
   };
 
   return { server, authCode, waitForAuthCode, authCompletedPromise };
-}
-
-/**
- * Sets up an Express server to handle OAuth callbacks
- * @param options The server options
- * @returns An object with the server, authCode, and waitForAuthCode function
- */
-export function setupOAuthCallbackServer(options: OAuthCallbackServerOptions) {
-  const { server, authCode, waitForAuthCode } =
-    setupOAuthCallbackServerWithLongPoll(options);
-  return { server, authCode, waitForAuthCode };
 }
 
 /**

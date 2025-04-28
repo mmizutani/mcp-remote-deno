@@ -35,8 +35,8 @@ Here is a plan to transform your Node.js CLI package into a Deno CLI project, fo
     - [x] Improve type definitions, especially for external library interactions (e.g., express request/response types if kept).
     - [x] Run `deno fmt` to ensure consistent code formatting.
 7. **Improve Dependency Management:**
-    - [ ] Evaluate replacing `npm:express` with a native Deno HTTP server solution (e.g., `Deno.serve` or from `std/http`).
-    - [ ] Evaluate replacing `npm:open` with a Deno equivalent or platform-specific commands.
+    - [x] Evaluate replacing `npm:express` with a native Deno HTTP server solution (e.g., `Deno.serve` or from `std/http`).
+    - [x] Evaluate replacing `npm:open` with a Deno equivalent or platform-specific commands.
 8. **Implement Testing:**
     - [ ] Add unit tests for key utility functions (e.g., in `utils.ts`, `mcp-auth-config.ts`).
     - [ ] Add integration tests for the core proxy (`proxy.ts`) and client (`client.ts`) functionality.

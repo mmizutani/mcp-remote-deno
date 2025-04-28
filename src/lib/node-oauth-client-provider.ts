@@ -1,4 +1,3 @@
-import open from "npm:open";
 import type { OAuthClientProvider } from "npm:@modelcontextprotocol/sdk/client/auth.js";
 import "npm:@modelcontextprotocol/sdk/client/auth.js";
 import {
@@ -18,6 +17,7 @@ import {
   writeTextFile,
 } from "./mcp-auth-config.ts";
 import { getServerUrlHash, log, MCP_REMOTE_VERSION } from "./utils.ts";
+import open from "./deno-open.ts";
 
 /**
  * Implements the OAuthClientProvider interface for Node.js environments.
