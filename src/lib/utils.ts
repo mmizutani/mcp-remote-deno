@@ -78,7 +78,7 @@ export async function connectToRemoteServer(
   authProvider: OAuthClientProvider,
   headers: Record<string, string>,
   waitForAuthCode: () => Promise<string>,
-  skipBrowserAuth: boolean = false,
+  skipBrowserAuth = false,
 ): Promise<SSEClientTransport> {
   log(`[${pid}] Connecting to remote server: ${serverUrl}`)
   const url = new URL(serverUrl)
@@ -282,6 +282,12 @@ export async function findAvailablePort(preferredPort?: number): Promise<number>
  * @returns A promise that resolves to an object with parsed serverUrl, callbackPort and headers
  */
 export async function parseCommandLineArgs(args: string[], defaultPort: number, usage: string) {
+  // Check for help flag
+  if (args.includes('--help') || args.includes('-h')) {
+    log(usage)
+    Deno.exit(0)
+  }
+
   // Process headers
   const headers: Record<string, string> = {}
   args.forEach((arg, i) => {
@@ -298,21 +304,21 @@ export async function parseCommandLineArgs(args: string[], defaultPort: number, 
   })
 
   const serverUrl = args[0]
-  const specifiedPort = args[1] ? parseInt(args[1]) : undefined
+  const specifiedPort = args[1] ? Number.parseInt(args[1], 10) : undefined
   const allowHttp = args.includes('--allow-http')
 
   if (!serverUrl) {
     log(usage)
-    process.exit(1)
+    Deno.exit(1)
   }
 
   const url = new URL(serverUrl)
   const isLocalhost = (url.hostname === 'localhost' || url.hostname === '127.0.0.1') && url.protocol === 'http:'
 
-  if (!(url.protocol == 'https:' || isLocalhost || allowHttp)) {
+  if (!(url.protocol === 'https:' || isLocalhost || allowHttp)) {
     log('Error: Non-HTTPS URLs are only allowed for localhost or when --allow-http flag is provided')
     log(usage)
-    process.exit(1)
+    Deno.exit(1)
   }
 
   // Use the specified port, or find an available one
@@ -331,15 +337,15 @@ export async function parseCommandLineArgs(args: string[], defaultPort: number, 
   // example `Authorization: Bearer ${TOKEN}` will read process.env.TOKEN
   for (const [key, value] of Object.entries(headers)) {
     headers[key] = value.replace(/\$\{([^}]+)}/g, (match, envVarName) => {
-      const envVarValue = process.env[envVarName]
+      const envVarValue = Deno.env.get(envVarName)
 
       if (envVarValue !== undefined) {
         log(`Replacing ${match} with environment value in header '${key}'`)
         return envVarValue
-      } else {
-        log(`Warning: Environment variable '${envVarName}' not found for header '${key}'.`)
-        return ''
       }
+
+      log(`Warning: Environment variable '${envVarName}' not found for header '${key}'.`)
+      return ''
     })
   }
 
@@ -351,14 +357,23 @@ export async function parseCommandLineArgs(args: string[], defaultPort: number, 
  * @param cleanup Cleanup function to run on shutdown
  */
 export function setupSignalHandlers(cleanup: () => Promise<void>) {
-  process.on('SIGINT', async () => {
+  Deno.addSignalListener("SIGINT", async () => {
     log('\nShutting down...')
     await cleanup()
-    process.exit(0)
+    Deno.exit(0)
   })
 
-  // Keep the process alive
-  process.stdin.resume()
+  // For SIGTERM
+  try {
+    Deno.addSignalListener("SIGTERM", async () => {
+      log('\nReceived SIGTERM. Shutting down...')
+      await cleanup()
+      Deno.exit(0)
+    })
+  } catch (e) {
+    // SIGTERM might not be available on all platforms
+    log('SIGTERM handler not available on this platform')
+  }
 }
 
 /**

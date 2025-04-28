@@ -1,22 +1,23 @@
 #!/usr/bin/env node
+/// <reference lib="deno.ns" />
 
 /**
  * MCP Client with OAuth support
  * A command-line client that connects to an MCP server using SSE with OAuth authentication.
  *
- * Run with: npx tsx client.ts https://example.remote/server [callback-port]
+ * Run with: deno run --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/client.ts https://example.remote/server [callback-port]
  *
  * If callback-port is not specified, an available port will be automatically selected.
  */
 
-import { EventEmitter } from 'events'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
-import { ListResourcesResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js'
-import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
-import { NodeOAuthClientProvider } from './lib/node-oauth-client-provider'
-import { parseCommandLineArgs, setupSignalHandlers, log, MCP_REMOTE_VERSION, getServerUrlHash } from './lib/utils'
-import { coordinateAuth } from './lib/coordination'
+import { EventEmitter } from 'node:events'
+import { Client } from 'npm:@modelcontextprotocol/sdk/client/index.js'
+import { SSEClientTransport } from 'npm:@modelcontextprotocol/sdk/client/sse.js'
+import { ListResourcesResultSchema, ListToolsResultSchema } from 'npm:@modelcontextprotocol/sdk/types.js'
+import { UnauthorizedError } from 'npm:@modelcontextprotocol/sdk/client/auth.js'
+import { NodeOAuthClientProvider } from './lib/node-oauth-client-provider.ts'
+import { parseCommandLineArgs, setupSignalHandlers, log, MCP_REMOTE_VERSION, getServerUrlHash } from './lib/utils.ts'
+import { coordinateAuth } from './lib/coordination.ts'
 
 /**
  * Main function to run the client
@@ -73,7 +74,7 @@ async function runClient(serverUrl: string, callbackPort: number, headers: Recor
 
     transport.onclose = () => {
       log('Connection closed.')
-      process.exit(0)
+      Deno.exit(0)
     }
     return transport
   }
@@ -124,12 +125,12 @@ async function runClient(serverUrl: string, callbackPort: number, headers: Recor
       } catch (authError) {
         log('Authorization error:', authError)
         server.close()
-        process.exit(1)
+        Deno.exit(1)
       }
     } else {
       log('Connection error:', error)
       server.close()
-      process.exit(1)
+      Deno.exit(1)
     }
   }
 
@@ -155,11 +156,11 @@ async function runClient(serverUrl: string, callbackPort: number, headers: Recor
 }
 
 // Parse command-line arguments and run the client
-parseCommandLineArgs(process.argv.slice(2), 3333, 'Usage: npx tsx client.ts <https://server-url> [callback-port]')
+parseCommandLineArgs(Deno.args, 3333, 'Usage: deno run src/client.ts <https://server-url> [callback-port]')
   .then(({ serverUrl, callbackPort, headers }) => {
     return runClient(serverUrl, callbackPort, headers)
   })
   .catch((error) => {
     console.error('Fatal error:', error)
-    process.exit(1)
+    Deno.exit(1)
   })

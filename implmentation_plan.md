@@ -25,7 +25,9 @@ Here is a plan to transform your Node.js CLI package into a Deno CLI project, fo
     - [x] Decide whether to keep `package.json`. It's not used by Deno for dependencies but can be useful for metadata (name, version, description). If kept, ensure it doesn't cause confusion.
     - [x] Remove `tsconfig.json` if all necessary compiler options are migrated to `deno.json`. Linters/editors might still pick it up, so consider keeping it for tooling compatibility if needed, but `deno.json` takes precedence for Deno itself.
 5. **Testing:**
-    - [ ] Run the main task using `deno task start <args...>`.
-    - [ ] Thoroughly test the CLI's functionality to ensure it behaves identically to the original Node.js version. Pay close attention to areas involving file system access, network requests, environment variables, and process management.
+    - [x] Added client.ts as an additional CLI entrypoint
+    - [x] Added client task to deno.json
+    - [x] Run the main task using `deno task proxy:start <args...>`.
+    - [x] Thoroughly test the CLI's functionality to ensure it behaves identically to the original Node.js version. Pay close attention to areas involving file system access, network requests, environment variables, and process management.
 
 This plan prioritizes modifying the existing TypeScript code minimally while adapting the project structure and configuration for Deno. We will start by modifying `deno.json` and `src/proxy.ts`.

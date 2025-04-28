@@ -2,6 +2,10 @@
   "name": "@legalforce/mcp-remote-deno",
   "version": "1.0.0",
   "description": "Deno wrapper for mcp-use proxy server",
+  "exports": {
+    ".": "./src/proxy.ts",
+    "./client": "./src/client.ts"
+  },
   "publish": {
     "include": [
       "dist/",
@@ -10,8 +14,10 @@
     ]
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/proxy.ts",
-    "dev": "deno run --watch --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/proxy.ts"
+    "proxy:start": "deno run --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/proxy.ts",
+    "proxy:watch": "deno run --watch --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/proxy.ts",
+    "client:start": "deno run --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/client.ts",
+    "client:watch": "deno run --watch --allow-net --allow-env --allow-read --allow-run --allow-sys --allow-ffi src/client.ts"
   },
   "imports": {
     "std/": "https://deno.land/std@0.220.0/",
