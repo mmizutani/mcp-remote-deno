@@ -1,7 +1,7 @@
 {
-  "name": "@legalforce/mcp-remote-deno",
+  "name": "@mmizutani/mcp-remote-deno",
   "version": "0.0.1",
-  "description": "Deno wrapper for mcp-use proxy server",
+  "description": "A Deno-based bidirectional proxy for Model Context Protocol (MCP) that connects local STDIO servers to remote SSE servers with OAuth authentication support",
   "exports": {
     ".": "./src/proxy.ts",
     "./client": "./src/client.ts"
