@@ -159,7 +159,7 @@ export async function coordinateAuth(
         log("Authentication completed by another instance");
 
         // Setup a dummy server - the client will use tokens directly from disk
-        const dummyServer = express().listen(0); // Listen on any available port
+        const dummyServer = express().listen(0, "localhost"); // Listen on any available port on localhost only
 
         // This shouldn't actually be called in normal operation, but provide it for API compatibility
         const dummyWaitForAuthCode = () => {

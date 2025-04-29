@@ -98,7 +98,7 @@ export function getConfigDir(): string {
   const baseConfigDir = Deno.env.get("MCP_REMOTE_CONFIG_DIR") ||
     path.join(os.homedir(), ".mcp-auth");
   // Add a version subdirectory so we don't need to worry about backwards/forwards compatibility yet
-  return path.join(baseConfigDir, `mcp-remote-${MCP_REMOTE_VERSION}`);
+  return path.join(baseConfigDir, `mcp-remote-deno-${MCP_REMOTE_VERSION}`);
 }
 
 /**

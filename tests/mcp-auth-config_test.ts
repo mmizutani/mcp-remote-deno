@@ -1,11 +1,8 @@
 import {
   assertEquals,
-  assertMatch,
   assertStringIncludes,
 } from "std/assert/mod.ts";
-import { describe, it, beforeEach, afterEach } from "std/testing/bdd.ts";
-import { assertSpyCalls, spy, stub } from "std/testing/mock.ts";
-import { FakeTime } from "std/testing/time.ts";
+import { describe, it, afterEach } from "std/testing/bdd.ts";
 import {
   getConfigDir,
   getConfigFilePath,
@@ -35,7 +32,7 @@ describe("mcp-auth-config", () => {
       const configDir = getConfigDir();
 
       assertStringIncludes(configDir, customDir);
-      assertStringIncludes(configDir, `mcp-remote-${MCP_REMOTE_VERSION}`);
+      assertStringIncludes(configDir, `mcp-remote-deno-${MCP_REMOTE_VERSION}`);
     });
 
     it("falls back to ~/.mcp-auth if environment variable is not set", () => {
@@ -48,7 +45,7 @@ describe("mcp-auth-config", () => {
       const configDir = getConfigDir();
 
       assertStringIncludes(configDir, expectedBase);
-      assertStringIncludes(configDir, `mcp-remote-${MCP_REMOTE_VERSION}`);
+      assertStringIncludes(configDir, `mcp-remote-deno-${MCP_REMOTE_VERSION}`);
     });
   });
 

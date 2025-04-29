@@ -48,12 +48,25 @@ export class DenoHttpServer {
   /**
    * Start the server listening on the specified port
    * @param port The port to listen on
+   * @param hostname Optional hostname to bind to
    * @param callback Optional callback when server is ready
    */
-  listen(port: number, callback?: () => void): Server {
+  listen(port: number, hostname?: string | (() => void), callback?: () => void): Server {
+    // Handle optional hostname parameter
+    let hostnameStr: string | undefined;
+    let callbackFn = callback;
+
+    if (typeof hostname === 'function') {
+      callbackFn = hostname;
+      hostnameStr = undefined;
+    } else {
+      hostnameStr = hostname;
+    }
+
     this.server = Deno.serve({
       port,
-      onListen: callback ? () => callback() : undefined,
+      hostname: hostnameStr,
+      onListen: callbackFn ? () => callbackFn() : undefined,
       handler: async (request: Request) => {
         const url = new URL(request.url);
         const path = url.pathname;
@@ -73,6 +86,7 @@ export class DenoHttpServer {
     // This is needed to maintain API compatibility
     return {
       close: () => this.close(),
+      address: () => ({ port }),
     } as unknown as Server;
   }
 
