@@ -76,9 +76,9 @@ describe("DenoHttpServer", () => {
 
     try {
       serverInstance = server.listen(localTestPort, "localhost");
-      // Use the port property directly - we know our implementation returns an object with port
-      const port = (serverInstance as unknown as { port: number }).port;
-      assertEquals(port, localTestPort);
+      // Our implementation returns an object with address() that returns {port}
+      const addr = serverInstance.address() as { port: number };
+      assertEquals(localTestPort, addr.port);
     } finally {
       if (serverInstance) {
         server.close();

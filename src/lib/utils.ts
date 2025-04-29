@@ -247,7 +247,7 @@ export function setupOAuthCallbackServerWithLongPoll(
     options.events.emit("auth-code-received", code);
   });
 
-  const server = app.listen(options.port, "localhost", () => {
+  const server = app.listen(options.port, "127.0.0.1", () => {
     log(`OAuth callback server running at http://127.0.0.1:${options.port}`);
   });
 
@@ -281,7 +281,7 @@ export function findAvailablePort(
     server.on("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
         // If preferred port is in use, get a random port
-        server.listen({ port: 0, hostname: "localhost" });
+        server.listen({ port: 0, hostname: "127.0.0.1" });
       } else {
         reject(err);
       }
@@ -295,7 +295,7 @@ export function findAvailablePort(
     });
 
     // Try preferred port first, or get a random port
-    server.listen({ port: preferredPort || 0, hostname: "localhost" });
+    server.listen({ port: preferredPort || 0, hostname: "127.0.0.1" });
   });
 }
 
