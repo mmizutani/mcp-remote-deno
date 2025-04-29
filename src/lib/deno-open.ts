@@ -30,6 +30,8 @@ export interface OpenOptions {
  *
  * @param target The URL or file path to open.
  * @param options Optional configuration for opening the target.
+ * @returns A Promise that resolves when the application has been opened (or exited if wait=true).
+ * @throws Error if the platform is unsupported or if opening the target fails.
  */
 export default async function open(
   target: string,

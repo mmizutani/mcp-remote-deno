@@ -54,8 +54,8 @@ export async function isPidRunning(pid: number): Promise<boolean> {
 
 /**
  * Checks if a lockfile is valid (process running and endpoint accessible)
- * @param lockData The lockfile data
- * @returns True if the lockfile is valid, false otherwise
+ * @param lockData The lockfile data to validate
+ * @returns True if the lockfile is valid and the process is still running, false otherwise
  */
 export async function isLockValid(lockData: LockfileData): Promise<boolean> {
   // Check if the lockfile is too old (over 30 minutes)
@@ -93,7 +93,7 @@ export async function isLockValid(lockData: LockfileData): Promise<boolean> {
 
 /**
  * Waits for authentication from another server instance
- * @param port The port to connect to
+ * @param port The port of the other server instance to connect to
  * @returns True if authentication completed successfully, false otherwise
  */
 export async function waitForAuthentication(port: number): Promise<boolean> {
@@ -127,10 +127,10 @@ export async function waitForAuthentication(port: number): Promise<boolean> {
 
 /**
  * Coordinates authentication between multiple instances of the client/proxy
- * @param serverUrlHash The hash of the server URL
+ * @param serverUrlHash The hash of the server URL for lockfile identification
  * @param callbackPort The port to use for the callback server
- * @param events The event emitter to use for signaling
- * @returns An object with the server, waitForAuthCode function, and a flag indicating if browser auth can be skipped
+ * @param events The event emitter to use for signaling between components
+ * @returns An object with the HTTP server, waitForAuthCode function, and a flag indicating if browser auth can be skipped
  */
 export async function coordinateAuth(
   serverUrlHash: string,
