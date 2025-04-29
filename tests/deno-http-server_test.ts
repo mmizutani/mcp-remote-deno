@@ -57,6 +57,7 @@ describe("DenoHttpServer", () => {
 
     // Verify the response
     assertEquals(response.status, 404);
+    await response.body?.cancel(); // Consume the body to prevent leaks
   });
 });
 

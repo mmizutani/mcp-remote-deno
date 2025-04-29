@@ -1,4 +1,4 @@
-# Implmentation Plan
+# Implementation Plan
 
 Here is a plan to transform your Node.js CLI package into a Deno CLI project, focusing on reusing the existing TypeScript code in the `src/` directory:
 

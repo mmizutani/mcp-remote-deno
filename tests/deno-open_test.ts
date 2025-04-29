@@ -5,7 +5,12 @@ import open from "../src/lib/deno-open.ts";
 
 // Define the expected structure returned by the mocked Deno.Command
 interface MockCommandOutput {
-  spawn: () => { status: Promise<{ success: boolean; code: number }> };
+  output: () => Promise<{
+    success: boolean;
+    code: number;
+    stdout: Uint8Array;
+    stderr: Uint8Array;
+  }>;
 }
 
 describe("deno-open", () => {
@@ -26,88 +31,69 @@ describe("deno-open", () => {
   });
 
   it("calls the correct command on macOS", async () => {
-    // Save original OS detection
-    const originalOs = Deno.build.os;
+    // Mock Deno.Command implementation to return success
+    const mockOutput = {
+      success: true,
+      code: 0,
+      stdout: new Uint8Array(),
+      stderr: new Uint8Array(),
+    };
+    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    commandSpy = spy(mockCommandConstructor);
+    (Deno.Command as unknown) = commandSpy;
 
-    try {
-      // Mock OS detection - pretend we're on macOS
-      Object.defineProperty(Deno.build, "os", { value: "darwin", configurable: true });
+    // Call open, specifying macOS in options
+    const url = "https://example.com";
+    await open(url, { os: "darwin" });
 
-      // Mock Deno.Command implementation
-      const mockSpawn = { status: Promise.resolve({ success: true, code: 0 }) };
-      const mockCommandConstructor = () => ({ spawn: () => mockSpawn });
-      commandSpy = spy(mockCommandConstructor);
-      (Deno.Command as unknown) = commandSpy;
-
-      // Call open
-      const url = "https://example.com";
-      await open(url);
-
-      // Verify the spy was called with correct arguments
-      assertSpyCalls(commandSpy, 1);
-      assertEquals(commandSpy.calls[0].args[0], "open");
-      assertEquals((commandSpy.calls[0].args[1] as { args: string[] }).args[0], url);
-    } finally {
-      // Restore original OS detection
-      Object.defineProperty(Deno.build, "os", { value: originalOs, configurable: true });
-    }
+    // Verify the spy was called with correct arguments
+    assertSpyCalls(commandSpy, 1);
+    assertEquals(commandSpy.calls[0].args[0], "open");
+    assertEquals(commandSpy.calls[0].args[1]?.args, [url]);
   });
 
   it("calls the correct command on Windows", async () => {
-    // Save original OS detection
-    const originalOs = Deno.build.os;
+    // Mock Deno.Command implementation to return success
+    const mockOutput = {
+      success: true,
+      code: 0,
+      stdout: new Uint8Array(),
+      stderr: new Uint8Array(),
+    };
+    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    commandSpy = spy(mockCommandConstructor);
+    (Deno.Command as unknown) = commandSpy;
 
-    try {
-      // Mock OS detection - pretend we're on Windows
-      Object.defineProperty(Deno.build, "os", { value: "windows", configurable: true });
+    // Call open, specifying windows in options
+    const url = "https://example.com";
+    await open(url, { os: "windows" });
 
-      // Mock Deno.Command implementation
-      const mockSpawn = { status: Promise.resolve({ success: true, code: 0 }) };
-      const mockCommandConstructor = () => ({ spawn: () => mockSpawn });
-      commandSpy = spy(mockCommandConstructor);
-      (Deno.Command as unknown) = commandSpy;
-
-      // Call open
-      const url = "https://example.com";
-      await open(url);
-
-      // Verify the spy was called with correct arguments
-      assertSpyCalls(commandSpy, 1);
-      assertEquals(commandSpy.calls[0].args[0], "cmd");
-      assertEquals((commandSpy.calls[0].args[1] as { args: string[] }).args[0], "/c");
-      assertEquals((commandSpy.calls[0].args[1] as { args: string[] }).args[1], "start");
-      assertEquals((commandSpy.calls[0].args[1] as { args: string[] }).args[2], "");
-      assertEquals((commandSpy.calls[0].args[1] as { args: string[] }).args[3], url);
-    } finally {
-      // Restore original OS detection
-      Object.defineProperty(Deno.build, "os", { value: originalOs, configurable: true });
-    }
+    // Verify the spy was called with correct arguments
+    assertSpyCalls(commandSpy, 1);
+    assertEquals(commandSpy.calls[0].args[0], "cmd");
+    assertEquals(commandSpy.calls[0].args[1]?.args, ["/c", "start", '""', url]);
   });
 
   it("throws error on command failure", async () => {
-    // Save original OS detection
-    const originalOs = Deno.build.os;
+    // Mock Deno.Command to return failure
+    const stderrOutput = new TextEncoder().encode("Command failed error message");
+    const mockOutput = {
+      success: false,
+      code: 1,
+      stdout: new Uint8Array(),
+      stderr: stderrOutput,
+    };
+    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    commandSpy = spy(mockCommandConstructor);
+    (Deno.Command as unknown) = commandSpy;
 
-    try {
-      // Mock OS detection
-      Object.defineProperty(Deno.build, "os", { value: "darwin", configurable: true });
-
-      // Mock Deno.Command to return failure
-      const mockSpawn = { status: Promise.resolve({ success: false, code: 1 }) };
-      const mockCommandConstructor = () => ({ spawn: () => mockSpawn });
-      commandSpy = spy(mockCommandConstructor);
-      (Deno.Command as unknown) = commandSpy;
-
-      // Call open and expect it to throw
-      await assertRejects(
-        () => open("https://example.com"),
-        Error,
-        "Failed to open"
-      );
-      assertSpyCalls(commandSpy, 1);
-    } finally {
-      // Restore original OS detection
-      Object.defineProperty(Deno.build, "os", { value: originalOs, configurable: true });
-    }
+    // Call open and expect it to throw
+    const url = "https://example.com";
+    await assertRejects(
+      () => open(url, { os: "darwin" }),
+      Error,
+      `Failed to open "${url}". Command "open ${url}" exited with code 1.\nStderr: Command failed error message`,
+    );
+    assertSpyCalls(commandSpy, 1);
   });
 });

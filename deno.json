@@ -23,15 +23,16 @@
     "test:coverage": "deno test --coverage=coverage --allow-net --allow-env --allow-read --allow-run --allow-sys tests/ && deno coverage coverage"
   },
   "imports": {
-    "std/": "https://deno.land/std@0.220.0/",
-    "node/": "https://deno.land/std@0.220.0/node/",
+    "std/": "https://deno.land/std@0.224.0/",
+    "node/": "https://deno.land/std@0.224.0/node/",
     "@modelcontextprotocol/sdk/": "npm:@modelcontextprotocol/sdk/"
   },
   "compilerOptions": {
     "strict": true,
     "lib": [
       "ES2022",
-      "DOM"
+      "DOM",
+      "deno.ns"
     ]
   }
 }
