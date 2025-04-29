@@ -11,7 +11,7 @@
  */
 
 import { EventEmitter } from "node:events";
-import { StdioServerTransport } from "npm:@modelcontextprotocol/sdk/server/stdio.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   connectToRemoteServer,
   getServerUrlHash,

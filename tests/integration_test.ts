@@ -1,7 +1,7 @@
 import { assertEquals, assertExists } from "std/assert/mod.ts";
 import { describe, it, beforeEach } from "std/testing/bdd.ts";
 import { mcpProxy } from "../src/lib/utils.ts";
-import type { Transport } from "npm:@modelcontextprotocol/sdk/shared/transport.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
 // Mock Transport implementation for testing
 class MockTransport implements Transport {

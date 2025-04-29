@@ -1,14 +1,14 @@
-import type { OAuthClientProvider } from "npm:@modelcontextprotocol/sdk/client/auth.js";
-import "npm:@modelcontextprotocol/sdk/client/auth.js";
+import type { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
+import "@modelcontextprotocol/sdk/client/auth.js";
 import {
   OAuthClientInformationSchema,
   OAuthTokensSchema,
-} from "npm:@modelcontextprotocol/sdk/shared/auth.js";
+} from "@modelcontextprotocol/sdk/shared/auth.js";
 import type {
   OAuthClientInformation,
   OAuthClientInformationFull,
   OAuthTokens,
-} from "npm:@modelcontextprotocol/sdk/shared/auth.js";
+} from "@modelcontextprotocol/sdk/shared/auth.js";
 import type { OAuthProviderOptions } from "./types.ts";
 import {
   readJsonFile,

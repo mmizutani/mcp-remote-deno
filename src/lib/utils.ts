@@ -1,9 +1,9 @@
 import {
   type OAuthClientProvider,
   UnauthorizedError,
-} from "npm:@modelcontextprotocol/sdk/client/auth.js";
-import { SSEClientTransport } from "npm:@modelcontextprotocol/sdk/client/sse.js";
-import type { Transport } from "npm:@modelcontextprotocol/sdk/shared/transport.js";
+} from "@modelcontextprotocol/sdk/client/auth.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { OAuthCallbackServerOptions } from "./types.ts";
 import net from "node:net";
 import crypto from "node:crypto";

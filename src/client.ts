@@ -11,13 +11,13 @@
  */
 
 import { EventEmitter } from "node:events";
-import { Client } from "npm:@modelcontextprotocol/sdk/client/index.js";
-import { SSEClientTransport } from "npm:@modelcontextprotocol/sdk/client/sse.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import {
   ListResourcesResultSchema,
   ListToolsResultSchema,
-} from "npm:@modelcontextprotocol/sdk/types.js";
-import { UnauthorizedError } from "npm:@modelcontextprotocol/sdk/client/auth.js";
+} from "@modelcontextprotocol/sdk/types.js";
+import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
 import { NodeOAuthClientProvider } from "./lib/node-oauth-client-provider.ts";
 import {
   getServerUrlHash,

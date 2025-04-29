@@ -25,7 +25,13 @@
   "imports": {
     "std/": "https://deno.land/std@0.224.0/",
     "node/": "https://deno.land/std@0.224.0/node/",
-    "@modelcontextprotocol/sdk/": "npm:@modelcontextprotocol/sdk/"
+    "@modelcontextprotocol/sdk/client/auth.js": "npm:@modelcontextprotocol/sdk@1.10.2/client/auth.js",
+    "@modelcontextprotocol/sdk/client/index.js": "npm:@modelcontextprotocol/sdk@1.10.2/client/index.js",
+    "@modelcontextprotocol/sdk/client/sse.js": "npm:@modelcontextprotocol/sdk@1.10.2/client/sse.js",
+    "@modelcontextprotocol/sdk/server/stdio.js": "npm:@modelcontextprotocol/sdk@1.10.2/server/stdio.js",
+    "@modelcontextprotocol/sdk/shared/auth.js": "npm:@modelcontextprotocol/sdk@1.10.2/shared/auth.js",
+    "@modelcontextprotocol/sdk/shared/transport.js": "npm:@modelcontextprotocol/sdk@1.10.2/shared/transport.js",
+    "@modelcontextprotocol/sdk/types.js": "npm:@modelcontextprotocol/sdk@1.10.2/types.js"
   },
   "compilerOptions": {
     "strict": true,
