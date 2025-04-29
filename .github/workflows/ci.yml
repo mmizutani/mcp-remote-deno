@@ -15,7 +15,6 @@ on:
       - '!**/*.md'
       - '!.github/**'
       - '.github/workflows/ci.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -34,7 +33,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
+          deno-version: v2.x
 
       - name: Cache Deno dependencies
         uses: actions/cache@v4
@@ -58,7 +57,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
+          deno-version: v2.x
 
       - name: Cache Deno dependencies
         uses: actions/cache@v4
@@ -82,7 +81,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
+          deno-version: v2.x
 
       - name: Cache Deno dependencies
         uses: actions/cache@v4
@@ -106,7 +105,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
+          deno-version: v2.x
 
       - name: Cache Deno dependencies
         uses: actions/cache@v4
@@ -120,13 +119,3 @@ jobs:
 
       - name: Run tests
         run: deno task test
-
-      - name: Generate coverage
-        run: deno coverage coverage --exclude="node_modules/"
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          directory: ./coverage/
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
