@@ -1,18 +1,29 @@
 import { assertEquals, assertRejects } from "std/assert/mod.ts";
 import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
-import { assertSpyCalls, assertSpyCallArg, spy, stub } from "std/testing/mock.ts";
+import {
+  assertSpyCallArg,
+  assertSpyCalls,
+  spy,
+  stub,
+} from "std/testing/mock.ts";
 import { NodeOAuthClientProvider } from "../src/lib/node-oauth-client-provider.ts";
 import * as mcpAuth from "../src/lib/mcp-auth-config.ts";
 import * as utils from "../src/lib/utils.ts";
 import openModule from "../src/lib/deno-open.ts";
-import { OAuthClientInformationSchema, OAuthTokensSchema } from "@modelcontextprotocol/sdk/shared/auth.js";
-import type { OAuthClientInformationFull, OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
+import {
+  OAuthClientInformationSchema,
+  OAuthTokensSchema,
+} from "@modelcontextprotocol/sdk/shared/auth.js";
+import type {
+  OAuthClientInformationFull,
+  OAuthTokens,
+} from "@modelcontextprotocol/sdk/shared/auth.js";
 
 // Helper function to check if a string contains a substring
 function stringContaining(expected: string) {
   return {
     asymmetricMatch: (actual: string) => {
-      return typeof actual === 'string' && actual.includes(expected);
+      return typeof actual === "string" && actual.includes(expected);
     },
     toString: () => `StringContaining(${expected})`,
   };
@@ -42,7 +53,11 @@ describe("NodeOAuthClientProvider", () => {
 
   describe("constructor", () => {
     it("initializes with provided options", () => {
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
 
@@ -54,7 +69,11 @@ describe("NodeOAuthClientProvider", () => {
     });
 
     it("uses default values for optional parameters", () => {
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
 
       const provider = new NodeOAuthClientProvider({
         serverUrl: testServerUrl,
@@ -68,9 +87,15 @@ describe("NodeOAuthClientProvider", () => {
       // biome-ignore lint/complexity/useLiteralKeys: accessing private property for testing
       assertEquals(provider["clientName"], "MCP CLI Client"); // Default value
       // biome-ignore lint/complexity/useLiteralKeys: accessing private property for testing
-      assertEquals(provider["clientUri"], "https://github.com/modelcontextprotocol/mcp-cli"); // Default value
+      assertEquals(
+        provider["clientUri"],
+        "https://github.com/modelcontextprotocol/mcp-cli",
+      ); // Default value
       // biome-ignore lint/complexity/useLiteralKeys: accessing private property for testing
-      assertEquals(provider["softwareId"], "2e6dc280-f3c3-4e01-99a7-8181dbd1d23d"); // Default value
+      assertEquals(
+        provider["softwareId"],
+        "2e6dc280-f3c3-4e01-99a7-8181dbd1d23d",
+      ); // Default value
       // biome-ignore lint/complexity/useLiteralKeys: accessing private property for testing
       assertEquals(provider["softwareVersion"], utils.MCP_REMOTE_VERSION); // Default value
 
@@ -80,21 +105,34 @@ describe("NodeOAuthClientProvider", () => {
 
   describe("getters", () => {
     it("returns correct redirectUrl", () => {
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
-      assertEquals(provider.redirectUrl, `http://127.0.0.1:${testCallbackPort}${testOptions.callbackPath}`);
+      assertEquals(
+        provider.redirectUrl,
+        `http://127.0.0.1:${testCallbackPort}${testOptions.callbackPath}`,
+      );
 
       getServerUrlHashStub.restore();
     });
 
     it("returns correct clientMetadata", () => {
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
 
       const expectedMetadata = {
-        redirect_uris: [`http://127.0.0.1:${testCallbackPort}${testOptions.callbackPath}`],
+        redirect_uris: [
+          `http://127.0.0.1:${testCallbackPort}${testOptions.callbackPath}`,
+        ],
         token_endpoint_auth_method: "none",
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
@@ -114,11 +152,19 @@ describe("NodeOAuthClientProvider", () => {
     it("returns client information when it exists", async () => {
       const mockClientInfo = {
         client_id: "test-client-id",
-        redirect_uris: ["http://localhost:3000/callback"]
+        redirect_uris: ["http://localhost:3000/callback"],
       };
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const readJsonFileStub = stub(mcpAuth, "readJsonFile", () => Promise.resolve(mockClientInfo));
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const readJsonFileStub = stub(
+        mcpAuth,
+        "readJsonFile",
+        () => Promise.resolve(mockClientInfo),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       const result = await provider.clientInformation();
@@ -134,8 +180,16 @@ describe("NodeOAuthClientProvider", () => {
     });
 
     it("returns undefined when client information doesn't exist", async () => {
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const readJsonFileStub = stub(mcpAuth, "readJsonFile", () => Promise.resolve(undefined));
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const readJsonFileStub = stub(
+        mcpAuth,
+        "readJsonFile",
+        () => Promise.resolve(undefined),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       const result = await provider.clientInformation();
@@ -155,11 +209,19 @@ describe("NodeOAuthClientProvider", () => {
         redirect_uris: ["http://localhost:3000/callback"],
         client_secret: "test-secret",
         client_id_issued_at: 123456789,
-        client_secret_expires_at: 0
+        client_secret_expires_at: 0,
       };
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const writeJsonFileStub = stub(mcpAuth, "writeJsonFile", () => Promise.resolve());
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const writeJsonFileStub = stub(
+        mcpAuth,
+        "writeJsonFile",
+        () => Promise.resolve(),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       await provider.saveClientInformation(mockClientInfo);
@@ -180,11 +242,19 @@ describe("NodeOAuthClientProvider", () => {
         access_token: "test-access-token",
         token_type: "Bearer",
         refresh_token: "test-refresh-token",
-        expires_in: 3600
+        expires_in: 3600,
       };
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const readJsonFileStub = stub(mcpAuth, "readJsonFile", () => Promise.resolve(mockTokens));
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const readJsonFileStub = stub(
+        mcpAuth,
+        "readJsonFile",
+        () => Promise.resolve(mockTokens),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       const result = await provider.tokens();
@@ -200,8 +270,16 @@ describe("NodeOAuthClientProvider", () => {
     });
 
     it("returns undefined when tokens don't exist", async () => {
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const readJsonFileStub = stub(mcpAuth, "readJsonFile", () => Promise.resolve(undefined));
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const readJsonFileStub = stub(
+        mcpAuth,
+        "readJsonFile",
+        () => Promise.resolve(undefined),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       const result = await provider.tokens();
@@ -220,11 +298,19 @@ describe("NodeOAuthClientProvider", () => {
         access_token: "test-access-token",
         token_type: "Bearer",
         refresh_token: "test-refresh-token",
-        expires_in: 3600
+        expires_in: 3600,
       };
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const writeJsonFileStub = stub(mcpAuth, "writeJsonFile", () => Promise.resolve());
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const writeJsonFileStub = stub(
+        mcpAuth,
+        "writeJsonFile",
+        () => Promise.resolve(),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       await provider.saveTokens(mockTokens);
@@ -241,17 +327,32 @@ describe("NodeOAuthClientProvider", () => {
 
   describe("redirectToAuthorization", () => {
     it("logs the authorization URL and opens browser successfully", async () => {
-      const authUrl = new URL("https://auth.example.com/authorize?client_id=test");
+      const authUrl = new URL(
+        "https://auth.example.com/authorize?client_id=test",
+      );
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
       const logSpy = spy(utils, "log");
-      const openStub = stub(openModule, "default" as keyof typeof openModule, () => Promise.resolve());
+      const openStub = stub(
+        openModule,
+        "default" as keyof typeof openModule,
+        () => Promise.resolve(),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       await provider.redirectToAuthorization(authUrl);
 
       assertSpyCalls(logSpy, 2);
-      assertSpyCallArg(logSpy, 0, 0, stringContaining("Please authorize this client by visiting:"));
+      assertSpyCallArg(
+        logSpy,
+        0,
+        0,
+        stringContaining("Please authorize this client by visiting:"),
+      );
       assertSpyCallArg(logSpy, 1, 0, "Browser opened automatically.");
 
       assertSpyCalls(openStub, 1);
@@ -263,18 +364,40 @@ describe("NodeOAuthClientProvider", () => {
     });
 
     it("logs a fallback message when browser can't be opened", async () => {
-      const authUrl = new URL("https://auth.example.com/authorize?client_id=test");
+      const authUrl = new URL(
+        "https://auth.example.com/authorize?client_id=test",
+      );
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
       const logSpy = spy(utils, "log");
-      const openStub = stub(openModule, "default" as keyof typeof openModule, () => { throw new Error("Failed to open browser"); });
+      const openStub = stub(
+        openModule,
+        "default" as keyof typeof openModule,
+        () => {
+          throw new Error("Failed to open browser");
+        },
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       await provider.redirectToAuthorization(authUrl);
 
       assertSpyCalls(logSpy, 2);
-      assertSpyCallArg(logSpy, 0, 0, stringContaining("Please authorize this client by visiting:"));
-      assertSpyCallArg(logSpy, 1, 0, "Could not open browser automatically. Please copy and paste the URL above into your browser.");
+      assertSpyCallArg(
+        logSpy,
+        0,
+        0,
+        stringContaining("Please authorize this client by visiting:"),
+      );
+      assertSpyCallArg(
+        logSpy,
+        1,
+        0,
+        "Could not open browser automatically. Please copy and paste the URL above into your browser.",
+      );
 
       assertSpyCalls(openStub, 1);
 
@@ -288,8 +411,16 @@ describe("NodeOAuthClientProvider", () => {
     it("saves the code verifier", async () => {
       const codeVerifier = "test-code-verifier";
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const writeTextFileStub = stub(mcpAuth, "writeTextFile", () => Promise.resolve());
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const writeTextFileStub = stub(
+        mcpAuth,
+        "writeTextFile",
+        () => Promise.resolve(),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       await provider.saveCodeVerifier(codeVerifier);
@@ -308,8 +439,16 @@ describe("NodeOAuthClientProvider", () => {
     it("returns the code verifier when it exists", async () => {
       const codeVerifier = "test-code-verifier";
 
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const readTextFileStub = stub(mcpAuth, "readTextFile", () => Promise.resolve(codeVerifier));
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const readTextFileStub = stub(
+        mcpAuth,
+        "readTextFile",
+        () => Promise.resolve(codeVerifier),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
       const result = await provider.codeVerifier();
@@ -318,18 +457,29 @@ describe("NodeOAuthClientProvider", () => {
       assertSpyCalls(readTextFileStub, 1);
       assertSpyCallArg(readTextFileStub, 0, 0, testServerUrlHash);
       assertSpyCallArg(readTextFileStub, 0, 1, "code_verifier.txt");
-      assertSpyCallArg(readTextFileStub, 0, 2, "No code verifier saved for session");
+      assertSpyCallArg(
+        readTextFileStub,
+        0,
+        2,
+        "No code verifier saved for session",
+      );
 
       getServerUrlHashStub.restore();
       readTextFileStub.restore();
     });
 
     it("throws an error when the code verifier doesn't exist", async () => {
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
       const readTextFileStub = stub(
         mcpAuth,
         "readTextFile",
-        () => { throw new Error("No code verifier saved for session"); }
+        () => {
+          throw new Error("No code verifier saved for session");
+        },
       );
 
       const provider = new NodeOAuthClientProvider(testOptions);
@@ -337,7 +487,7 @@ describe("NodeOAuthClientProvider", () => {
       await assertRejects(
         () => provider.codeVerifier(),
         Error,
-        "No code verifier saved for session"
+        "No code verifier saved for session",
       );
 
       assertSpyCalls(readTextFileStub, 1);
@@ -356,23 +506,39 @@ describe("NodeOAuthClientProvider", () => {
         redirect_uris: ["http://localhost:3000/callback"],
         client_secret: "test-secret",
         client_id_issued_at: 123456789,
-        client_secret_expires_at: 0
+        client_secret_expires_at: 0,
       };
 
       const tokens: OAuthTokens = {
         access_token: "test-access-token",
         token_type: "Bearer",
         refresh_token: "test-refresh-token",
-        expires_in: 3600
+        expires_in: 3600,
       };
 
       const codeVerifier = "test-code-verifier";
 
       // Set up stubs
-      const getServerUrlHashStub = stub(utils, "getServerUrlHash", () => testServerUrlHash);
-      const writeJsonFileStub = stub(mcpAuth, "writeJsonFile", () => Promise.resolve());
-      const writeTextFileStub = stub(mcpAuth, "writeTextFile", () => Promise.resolve());
-      const openStub = stub(openModule, "default" as keyof typeof openModule, () => Promise.resolve());
+      const getServerUrlHashStub = stub(
+        utils,
+        "getServerUrlHash",
+        () => testServerUrlHash,
+      );
+      const writeJsonFileStub = stub(
+        mcpAuth,
+        "writeJsonFile",
+        () => Promise.resolve(),
+      );
+      const writeTextFileStub = stub(
+        mcpAuth,
+        "writeTextFile",
+        () => Promise.resolve(),
+      );
+      const openStub = stub(
+        openModule,
+        "default" as keyof typeof openModule,
+        () => Promise.resolve(),
+      );
 
       const provider = new NodeOAuthClientProvider(testOptions);
 
@@ -382,7 +548,9 @@ describe("NodeOAuthClientProvider", () => {
       await provider.saveCodeVerifier(codeVerifier);
 
       // Test redirect to authorization
-      const authUrl = new URL("https://auth.example.com/authorize?client_id=test");
+      const authUrl = new URL(
+        "https://auth.example.com/authorize?client_id=test",
+      );
       await provider.redirectToAuthorization(authUrl);
 
       // Verify calls were made
