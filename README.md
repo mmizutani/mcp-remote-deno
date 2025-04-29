@@ -99,7 +99,7 @@ This implementation specifically leverages Deno's security-first approach, which
 
 Deno is required for both using this tool and building it.
 
-- [Deno](https://deno.com/)
+- [Deno](https://deno.com/) (v2.0.0 or later)
 
 ### Installation
 
@@ -495,12 +495,12 @@ To check what credential information is stored for your MCP connections:
 ls -la ~/.mcp-auth/
 
 # View contents of a specific version directory
-ls -la ~/.mcp-auth/mcp-remote-deno-0.0.1/
+ls -la ~/.mcp-auth/mcp-remote-deno-*
 
 # Examine a specific server's credentials (the hash prefix will vary)
-cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_client_info.json
-cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_tokens.json
-cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_code_verifier.txt
+cat ~/.mcp-auth/mcp-remote-deno-<version>/[hash]_client_info.json
+cat ~/.mcp-auth/mcp-remote-deno-<version>/[hash]_tokens.json
+cat ~/.mcp-auth/mcp-remote-deno-<version>/[hash]_code_verifier.txt
 ```
 
 Each remote server will have multiple files with the same hash prefix, storing different aspects of the OAuth session. In most cases, you shouldn't need to manually modify these files.
@@ -563,7 +563,7 @@ You can also run the proxy script directly using `deno run`. This requires speci
 
 ```bash
 # Define permissions based on deno.json task
-DENO_PERMISSIONS="--allow-env='MCP_REMOTE_CONFIG_DIR' --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com"
+DENO_PERMISSIONS="--allow-env='MCP_REMOTE_CONFIG_DIR' --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth\" --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com"
 
 # Basic usage with specific permissions:
 deno run $DENO_PERMISSIONS src/proxy.ts <server-url> [callback-port]
@@ -578,6 +578,8 @@ deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com 80
 ### Development Workflow
 
 ```bash
+deno install
+
 # Run in development mode with auto-reload
 deno task dev https://remote.mcp.server.example.com
 
