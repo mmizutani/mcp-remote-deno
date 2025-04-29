@@ -1,0 +1,28 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Testing Guide
+
+This repository uses Deno's built-in testing tools with BDD-style syntax.
+
+## Test Structure
+
+- Tests are located in the `tests/` directory
+- Each test file corresponds to a source file, with a `_test.ts` suffix
+
+## Testing Utilities
+
+- `std/testing/bdd.ts`: Provides `describe`, `it`, `beforeEach`, `afterEach`
+- `std/assert/mod.ts`: Provides assertions like `assertEquals`, `assertMatch`, `assertRejects`
+- `std/testing/mock.ts`: Provides spying functions like `spy`, `assertSpyCalls`, `assertSpyCallArg`
+
+## Testing Best Practices
+
+1. Use dependency injection for better testability (see `mockDeps` in OAuth tests)
+2. When testing log messages, use `assertMatch` with a regex pattern
+3. For comparing complex objects, use `assertEquals`
+4. For async code, use `assertRejects` to test error conditions
+
+For examples, see [tests/node-oauth-client-provider_test.ts](mdc:tests/node-oauth-client-provider_test.ts)

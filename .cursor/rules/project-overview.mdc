@@ -1,0 +1,18 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Overview
+
+This repository contains the Deno implementation of MCP Remote, a client for the Model Context Protocol.
+
+## Key Components
+
+- **OAuth Authentication**: Implemented in [src/lib/node-oauth-client-provider.ts](mdc:src/lib/node-oauth-client-provider.ts)
+- **Utility Functions**: Helper functions in [src/lib/utils.ts](mdc:src/lib/utils.ts)
+- **Constants**: The package version is defined as `MCP_REMOTE_VERSION` in [src/lib/utils.ts](mdc:src/lib/utils.ts)
+
+## Important Test Files
+
+- **OAuth Client Tests**: [tests/node-oauth-client-provider_test.ts](mdc:tests/node-oauth-client-provider_test.ts)

@@ -1,0 +1,23 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Utility Functions
+
+The MCP Remote package includes various utility functions in [src/lib/utils.ts](mdc:src/lib/utils.ts):
+
+## Key Constants
+
+- `MCP_REMOTE_VERSION`: The current version of the MCP Remote package (currently "0.0.1")
+- `AVAILABLE_PORT_START`: The starting port number for finding available ports (3000)
+
+## OAuth and Transport Functions
+
+- `log(str, ...rest)`: Logs a message with the process ID
+- `connectToRemoteServer()`: Connects to a remote SSE server with OAuth auth
+- `setupOAuthCallbackServer()`: Sets up an HTTP server for OAuth callbacks
+- `findAvailablePort()`: Finds an available port on the local machine
+- `getServerUrlHash()`: Generates a hash of a server URL for filenames
+
+These utilities are used throughout the application for OAuth handling, server connections, and logging.
