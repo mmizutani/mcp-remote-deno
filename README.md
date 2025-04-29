@@ -110,27 +110,27 @@ This project uses Deno's NPM compatibility feature to directly import and use th
 
 The core functionality relies on establishing two sets of communication channels based on the MCP HTTP+SSE transport specification:
 
-1. **Client <-> Proxy:**
-    - The proxy starts an HTTP server locally (defaulting to port 3334, configurable via the `[callback-port]` argument).
+1. **Local MCP Client <-> Local STDIO MCP Proxy Server:**
+    - The STDIO MCP proxy starts an HTTP server locally (defaulting to port 3334, configurable via the `[callback-port]` argument).
     - Your local MCP client connects to this server's SSE endpoint to receive messages *from* the proxy.
     - The client sends messages *to* the proxy via HTTP POST requests to a specific endpoint provided by the proxy upon connection.
-2. **Proxy <-> Server:**
-    - The proxy makes an initial HTTP connection to the remote MCP server specified by the `<server-url>` argument to establish an SSE connection. Any custom headers provided via the `--header` flag are sent during this setup.
+2. **Local STDIO MCP Proxy Server <-> Remote SSE MCP Server:**
+    - The proxy makes an initial HTTP connection to the remote SSE MCP server specified by the `<server-url>` argument to establish an SSE connection. Any custom headers provided via the `--header` flag are sent during this setup.
     - The proxy receives messages *from* the remote server via this SSE connection.
     - The proxy sends messages *to* the remote server via HTTP POST requests to the endpoint provided by the server during the initial handshake.
 
 Once both connections are established, the proxy relays messages between them:
 
-- HTTP POST messages received from the **Client** are forwarded as HTTP POST messages to the **Server**.
-- SSE messages received from the **Server** are forwarded as SSE messages to the **Client**.
+- HTTP POST messages received from the **Local MCP Client** are forwarded as HTTP POST messages to the **Remote SSE MCP Server**.
+- SSE messages received from the **Remote SSE MCP Server** are forwarded as SSE messages to the **Local MCP Client**.
 
-This creates a transparent bridge, allowing your local client to communicate with the remote server using the standard MCP HTTP+SSE transport.
+This creates a transparent bridge, allowing your local MCP client to communicate with the remote SSE MCP server using the standard MCP HTTP+SSE transport.
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant Proxy as Proxy (mcp-remote-deno)
-    participant Server
+    participant Client as Local MCP Client
+    participant Proxy as Local STDIO MCP Proxy Server (mcp-remote-deno)
+    participant Server as Remote SSE MCP Server
 
     Client->>+Proxy: GET / (Establish SSE connection, http://localhost:3334)
     Proxy-->>-Client: SSE stream opened, provides POST endpoint (/client-post)
