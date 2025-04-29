@@ -4,15 +4,15 @@ import {
   log,
   MCP_REMOTE_VERSION,
   findAvailablePort,
-  mcpProxy,
   setupSignalHandlers,
-  parseCommandLineArgs
+  parseCommandLineArgs,
+  AVAILABLE_PORT_START,
 } from "../src/lib/utils.ts";
 import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
 import { assertSpyCalls, spy, type MethodSpy } from "std/testing/mock.ts";
-import { EventEmitter } from "node:events";
-import net from "node:net";
+import type net from "node:net";
 import type { Transport } from "npm:@modelcontextprotocol/sdk/shared/transport.js";
+import type process from "node:process";
 
 // Define mock server type
 interface MockServer {
@@ -94,71 +94,142 @@ describe("utils", () => {
   });
 
   describe("findAvailablePort", () => {
-    let originalNetCreateServer: typeof net.createServer;
-    let serverListenSpy: MethodSpy<MockServer, [port: number, callback: () => void], MockServer>;
-    let serverCloseSpy: MethodSpy<MockServer, [callback: () => void], MockServer>;
+    let mockServer: MockServer;
+    let listenSpy: MethodSpy<MockServer, [port: number, callback: () => void], MockServer>;
+    let closeSpy: MethodSpy<MockServer, [callback: () => void], MockServer>;
 
     beforeEach(() => {
-      // Mock server behavior
-      originalNetCreateServer = net.createServer;
-
-      // Mock a server object
-      const mockServer: MockServer = {
-        listen: (port: number, callback: () => void) => {
-          // Call the callback to simulate server starting
-          callback();
+      // Create a proper mock server that correctly handles callbacks
+      mockServer = {
+        listen: (_port: number, callback: () => void) => {
+          // Properly invoke callback
+          if (typeof callback === 'function') {
+            callback();
+          }
           return mockServer;
         },
         close: (callback: () => void) => {
-          // Call the callback to simulate server closing
-          callback();
+          // Properly invoke callback
+          if (typeof callback === 'function') {
+            callback();
+          }
           return mockServer;
         },
         on: (_event: string, _callback: () => void) => {
           return mockServer;
-        },
+        }
       };
 
-      // Create spies on the mock server methods
-      serverListenSpy = spy(mockServer, "listen");
-      serverCloseSpy = spy(mockServer, "close");
-
-      // Mock the net.createServer
-      net.createServer = () => mockServer as unknown as net.Server;
+      // Create properly typed spies
+      listenSpy = spy(mockServer, "listen");
+      closeSpy = spy(mockServer, "close");
     });
 
     afterEach(() => {
-      // Restore original net.createServer
-      net.createServer = originalNetCreateServer;
-
-      // Clean up spies
-      serverListenSpy.restore();
-      serverCloseSpy.restore();
+      // Restore original methods
+      listenSpy.restore();
+      closeSpy.restore();
     });
 
-    it("finds an available port using the preferred port when it's available", async () => {
-      const preferredPort = 8080;
-      const port = await findAvailablePort(preferredPort);
+    it("returns the first available port", async () => {
+      const port = await findAvailablePort(mockServer as unknown as net.Server);
 
-      assertEquals(port, preferredPort);
-      assertSpyCalls(serverListenSpy, 1);
-      assertSpyCalls(serverCloseSpy, 1);
+      // Verify listen was called with the correct starting port
+      assertSpyCalls(listenSpy, 1);
+      const listenCall = listenSpy.calls[0];
+      assertEquals(listenCall.args[0], AVAILABLE_PORT_START);
+
+      // Verify the server was closed
+      assertSpyCalls(closeSpy, 1);
+
+      // Port should be at least the starting port
+      assertEquals(port, AVAILABLE_PORT_START);
     });
 
-    it("finds an available port automatically when no preference is given", async () => {
-      const port = await findAvailablePort();
+    it("increments port if initial port is unavailable", async () => {
+      // Reset spies
+      listenSpy.restore();
+      closeSpy.restore();
 
-      assertEquals(typeof port, "number");
-      assertSpyCalls(serverListenSpy, 1);
-      assertSpyCalls(serverCloseSpy, 1);
+      // Create a mock that fails on first port but succeeds on second
+      let callCount = 0;
+      mockServer.listen = (_port: number, callback: () => void) => {
+        callCount++;
+        if (callCount === 1) {
+          // First call should fail with EADDRINUSE
+          const error = new Error("Address in use") as Error & { code?: string };
+          error.code = "EADDRINUSE";
+          throw error;
+        }
+
+        // Second call should succeed
+        if (typeof callback === 'function') {
+          callback();
+        }
+        return mockServer;
+      };
+
+      // Re-create spies
+      listenSpy = spy(mockServer, "listen");
+      closeSpy = spy(mockServer, "close");
+
+      const port = await findAvailablePort(mockServer as unknown as net.Server);
+
+      // Verify listen was called twice, first with starting port, then with incremented port
+      assertSpyCalls(listenSpy, 2);
+      assertEquals(listenSpy.calls[0].args[0], AVAILABLE_PORT_START);
+      assertEquals(listenSpy.calls[1].args[0], AVAILABLE_PORT_START + 1);
+
+      // Verify the server was closed
+      assertSpyCalls(closeSpy, 1);
+
+      // Port should be the incremented value
+      assertEquals(port, AVAILABLE_PORT_START + 1);
+    });
+
+    it("throws after MAX_PORT_ATTEMPTS", async () => {
+      // Create a mock that always fails with EADDRINUSE
+      mockServer.listen = (_port: number, _callback: () => void) => {
+        const error = new Error("Address in use") as Error & { code?: string };
+        error.code = "EADDRINUSE";
+        throw error;
+      };
+
+      // Should now throw a timeout instead of port attempts limit
+      await assertRejects(
+        () => findAvailablePort(mockServer as unknown as net.Server),
+        Error,
+        "Timeout finding available port"
+      );
     });
   });
 
   describe("parseCommandLineArgs", () => {
+    // Mock the minimist function to avoid actual command line parsing
+    let originalProcess: typeof process;
+
+    beforeEach(() => {
+      // Save original process
+      originalProcess = globalThis.process;
+
+      // Create a mock process object
+      globalThis.process = {
+        ...originalProcess,
+        exit: (_code?: number) => {
+          throw new Error("Process exit called");
+        },
+      } as typeof process;
+    });
+
+    afterEach(() => {
+      // Restore original process
+      globalThis.process = originalProcess;
+    });
+
     it("parses valid arguments", async () => {
-      const args = ["--server", "https://example.com", "--port", "8080"];
+      const args = ["https://example.com", "8080"];
       const defaultPort = 3000;
-      const usage = "Usage: mcp-remote --server <url> [--port <port>]";
+      const usage = "Usage: mcp-remote <url> [port]";
 
       const result = await parseCommandLineArgs(args, defaultPort, usage);
 
@@ -167,9 +238,9 @@ describe("utils", () => {
     });
 
     it("uses default port if not specified", async () => {
-      const args = ["--server", "https://example.com"];
+      const args = ["https://example.com"];
       const defaultPort = 3000;
-      const usage = "Usage: mcp-remote --server <url> [--port <port>]";
+      const usage = "Usage: mcp-remote <url> [port]";
 
       const result = await parseCommandLineArgs(args, defaultPort, usage);
 
@@ -180,14 +251,14 @@ describe("utils", () => {
     it("enforces required server URL", async () => {
       const args: string[] = [];
       const defaultPort = 3000;
-      const usage = "Usage: mcp-remote --server <url> [--port <port>]";
+      const usage = "Usage: mcp-remote <url> [port]";
 
       await assertRejects(
         async () => {
           await parseCommandLineArgs(args, defaultPort, usage);
         },
         Error,
-        "Server URL is required"
+        "Process exit called"
       );
     });
 

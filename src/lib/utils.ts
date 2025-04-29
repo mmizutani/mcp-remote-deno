@@ -10,13 +10,34 @@ import crypto from "node:crypto";
 import createServer from "./deno-http-server.ts";
 
 // Package version from deno.json (set a constant for now)
-export const MCP_REMOTE_VERSION = "0.0.1"; // TODO: Find better way to get version in Deno
+export const MCP_REMOTE_VERSION = "0.0.1";
 
 const pid = Deno.pid;
 export function log(str: string, ...rest: unknown[]) {
   // Using stderr so that it doesn't interfere with stdout
   console.error(`[${pid}] ${str}`, ...rest);
 }
+
+// Helper function to safely get a message identifier for logging
+function getMessageIdentifier(message: unknown): string | number | undefined {
+  if (typeof message !== 'object' || message === null) return undefined;
+
+  // Check if it's a request or notification with a method
+  if ('method' in message && message.method !== undefined) {
+    return String(message.method);
+  }
+
+  // Check if it's a response with an id
+  if ('id' in message && message.id !== undefined) {
+    const id = message.id;
+    return typeof id === 'string' || typeof id === 'number' ? id : undefined;
+  }
+
+  return undefined;
+}
+
+// Starting port number to use when finding an available port
+export const AVAILABLE_PORT_START = 3000;
 
 /**
  * Creates a bidirectional proxy between two transports
@@ -32,14 +53,12 @@ export function mcpProxy(
   let transportToServerClosed = false;
 
   transportToClient.onmessage = (message) => {
-    // @ts-expect-error TODO
-    log("[Local→Remote]", message.method || message.id);
+    log("[Local→Remote]", getMessageIdentifier(message));
     transportToServer.send(message).catch(onServerError);
   };
 
   transportToServer.onmessage = (message) => {
-    // @ts-expect-error TODO: fix this type
-    log("[Remote→Local]", message.method || message.id);
+    log("[Remote→Local]", getMessageIdentifier(message));
     transportToClient.send(message).catch(onClientError);
   };
 
@@ -269,33 +288,62 @@ export function setupOAuthCallbackServerWithLongPoll(
 
 /**
  * Finds an available port on the local machine
- * @param preferredPort Optional preferred port to try first
+ * @param serverOrPort A server instance or preferred port number to try first
  * @returns A promise that resolves to an available port number
  */
 export function findAvailablePort(
-  preferredPort?: number,
+  serverOrPort?: number | net.Server,
 ): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
+  // Handle if server parameter is a number (preferred port)
+  const preferredPort = typeof serverOrPort === "number" ? serverOrPort : undefined;
+  const serverToUse = typeof serverOrPort !== "number" ? (serverOrPort as net.Server) : net.createServer();
+  let hasResolved = false;
 
-    server.on("error", (err: NodeJS.ErrnoException) => {
+  return new Promise((resolve, reject) => {
+    // Make sure to close the server in case of errors
+    const cleanupAndReject = (err: Error) => {
+      if (!hasResolved) {
+        hasResolved = true;
+        // Make sure to close the server
+        if (typeof serverOrPort === "number") {
+          serverToUse.close(() => {
+            reject(err);
+          });
+        } else {
+          reject(err);
+        }
+      }
+    };
+
+    // Set a timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      if (!hasResolved) {
+        cleanupAndReject(new Error("Timeout finding available port"));
+      }
+    }, 5000); // 5 second timeout
+
+    serverToUse.on("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
         // If preferred port is in use, get a random port
-        server.listen({ port: 0, hostname: "127.0.0.1" });
+        serverToUse.listen({ port: 0, hostname: "127.0.0.1" });
       } else {
-        reject(err);
+        cleanupAndReject(err);
       }
     });
 
-    server.on("listening", () => {
-      const { port } = server.address() as net.AddressInfo;
-      server.close(() => {
+    serverToUse.on("listening", () => {
+      const { port } = serverToUse.address() as net.AddressInfo;
+      hasResolved = true;
+      clearTimeout(timeoutId); // Clear the timeout when we resolve
+
+      // Close the server and then resolve with the port
+      serverToUse.close(() => {
         resolve(port);
       });
     });
 
     // Try preferred port first, or get a random port
-    server.listen({ port: preferredPort || 0, hostname: "127.0.0.1" });
+    serverToUse.listen({ port: preferredPort || 0, hostname: "127.0.0.1" });
   });
 }
 

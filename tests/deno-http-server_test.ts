@@ -50,11 +50,11 @@ describe("DenoHttpServer", () => {
   it("should handle 404 for non-existent routes", async () => {
     const server = new DenoHttpServer();
     const localTestPort = 9877;
-    let serverInstance!: ReturnType<DenoHttpServer["listen"]>;
+    let localServerInstance!: ReturnType<DenoHttpServer["listen"]>;
 
     try {
-  // Start the server on a random available port
-      serverInstance = server.listen(localTestPort, "localhost");
+      // Start the server on a random available port
+      localServerInstance = server.listen(localTestPort, "localhost");
 
       // Send a request to a non-existent route
       const response = await fetch(`http://localhost:${localTestPort}/non-existent`);
@@ -63,25 +63,25 @@ describe("DenoHttpServer", () => {
       assertEquals(response.status, 404);
       await response.body?.cancel(); // Consume the body to prevent leaks
     } finally {
-      if (serverInstance) {
-        server.close();
+      if (localServerInstance) {
+        await server.close(); // Use await to ensure proper cleanup
       }
     }
   });
 
-  it("should listen without callback", () => {
+  it("should listen without callback", async () => {
     const server = new DenoHttpServer();
     const localTestPort = 9878;
-    let serverInstance!: ReturnType<DenoHttpServer["listen"]>;
+    let localServerInstance!: ReturnType<DenoHttpServer["listen"]>;
 
     try {
-      serverInstance = server.listen(localTestPort, "localhost");
+      localServerInstance = server.listen(localTestPort, "localhost");
       // Our implementation returns an object with address() that returns {port}
-      const addr = serverInstance.address() as { port: number };
+      const addr = localServerInstance.address() as { port: number };
       assertEquals(localTestPort, addr.port);
     } finally {
-      if (serverInstance) {
-        server.close();
+      if (localServerInstance) {
+        await server.close(); // Use await to ensure proper cleanup
       }
     }
   });
