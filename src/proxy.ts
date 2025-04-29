@@ -26,6 +26,12 @@ import { coordinateAuth } from "./lib/coordination.ts";
 /**
  * Main function to run the proxy
  */
+/**
+ * Runs the MCP proxy server
+ * @param serverUrl The URL of the remote MCP server to connect to
+ * @param callbackPort The port to use for OAuth callback server
+ * @param headers Custom HTTP headers to send with requests to the remote server
+ */
 async function runProxy(
   serverUrl: string,
   callbackPort: number,
@@ -107,9 +113,34 @@ to the CA certificate file. If using claude_desktop_config.json, this might look
 {
   "mcpServers": {
     "\${mcpServerName}": {
-      "command": "npx",
+      "command": "deno",
       "args": [
-        "mcp-remote",
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost",
+        "src/proxy.ts",
+        "https://remote.mcp.server/sse"
+      ],
+      "env": {
+        "NODE_EXTRA_CA_CERTS": "\${your CA certificate file path}.pem"
+      }
+    }
+  }
+}
+
+Alternatively, you can use the predefined task from deno.json:
+
+{
+  "mcpServers": {
+    "\${mcpServerName}": {
+      "command": "deno",
+      "args": [
+        "task",
+        "proxy:start",
         "https://remote.mcp.server/sse"
       ],
       "env": {

@@ -30,6 +30,9 @@ import { coordinateAuth } from "./lib/coordination.ts";
 
 /**
  * Main function to run the client
+ * @param serverUrl The URL of the remote MCP server to connect to
+ * @param callbackPort The port to use for OAuth callback server
+ * @param headers Custom HTTP headers to send with requests to the remote server
  */
 async function runClient(
   serverUrl: string,

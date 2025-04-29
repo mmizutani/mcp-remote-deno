@@ -8,6 +8,7 @@ A Deno wrapper for the [mcp-use](https://github.com/geelen/mcp-remote) proxy ser
 - Provides a clean CLI interface
 - Supports custom HTTP headers
 - TypeScript type definitions included
+- Handles OAuth authentication with remote MCP servers
 
 ## Prerequisites
 
@@ -26,13 +27,13 @@ The primary way to use this tool is via the command line to start the proxy serv
 If you have cloned the repository, you can use the predefined Deno task:
 
 ```bash
-# Basic usage: Connects to the server and listens on default port 3334
+# Basic usage: Connects to the server and listens on default port 3334 for OAuth redirects
 deno task proxy:start <server-url>
 
 # Example:
 deno task proxy:start https://your-remote-mcp-server.com
 
-# Specify a custom local callback port:
+# Specify a custom local port for OAuth redirects:
 deno task proxy:start <server-url> [callback-port]
 
 # Example with custom port 8080:
@@ -48,7 +49,7 @@ deno task proxy:start https://your-remote-mcp-server.com 3334 --header "Authoriz
 **Arguments:**
 
 - `<server-url>`: (Required) The URL of the remote MCP server you want to connect to.
-- `[callback-port]`: (Optional) The local port the proxy should listen on for connections from your MCP client. Defaults to `3334`.
+- `[callback-port]`: (Optional) The local port the proxy should listen on for OAuth redirects from the remote MCP server. Defaults to `3334`. Note that if the specified port is unavailable, an open port will be chosen at random.
 - `--header "Name: Value"`: (Optional, repeatable) Custom HTTP headers to send to the remote MCP server during the initial connection.
 
 ### Running with `deno run`
@@ -104,56 +105,87 @@ deno fmt
 
 ## How It Works
 
-This project uses Deno's NPM compatibility feature to directly import and use the `mcp-use` package without the need for Node.js or a subprocess. It wraps the functionality in a Deno-friendly API with TypeScript type definitions.
+This project uses Deno's NPM compatibility feature to directly import and use the `mcp-use` NPM package without the need for running Node.js in a subprocess or container. It wraps the functionality in a Deno-friendly API with TypeScript type definitions.
 
 ### Bidirectional Proxying Explained
 
-The core functionality relies on establishing two sets of communication channels based on the MCP HTTP+SSE transport specification:
+The core functionality relies on establishing communication channels based on two different MCP transport specifications across three components:
 
-1. **Local MCP Client <-> Local STDIO MCP Proxy Server:**
-    - The STDIO MCP proxy starts an HTTP server locally (defaulting to port 3334, configurable via the `[callback-port]` argument).
-    - Your local MCP client connects to this server's SSE endpoint to receive messages *from* the proxy.
-    - The client sends messages *to* the proxy via HTTP POST requests to a specific endpoint provided by the proxy upon connection.
-2. **Local STDIO MCP Proxy Server <-> Remote SSE MCP Server:**
+1. **MCP Host (Cursor) <-> Local MCP Client:**
+    - The MCP Host (such as Cursor IDE) contains an embedded MCP Client that communicates with MCP Servers.
+    - The Host application provides the user interface and LLM integration capabilities.
+
+2. **Local MCP Client <-> Local MCP Proxy Server:**
+    - The proxy uses STDIO transport (stdin/stdout) for communication with the local MCP client.
+    - The local MCP client sends messages to the proxy via stdout, which the proxy reads from stdin.
+    - The proxy sends messages to the local client via stdout, which the client reads from stdin.
+    - This follows the MCP STDIO transport specification where messages are delimited by newlines.
+
+3. **Local MCP Proxy Server <-> Remote SSE MCP Server:**
     - The proxy makes an initial HTTP connection to the remote SSE MCP server specified by the `<server-url>` argument to establish an SSE connection. Any custom headers provided via the `--header` flag are sent during this setup.
     - The proxy receives messages *from* the remote server via this SSE connection.
     - The proxy sends messages *to* the remote server via HTTP POST requests to the endpoint provided by the server during the initial handshake.
 
-Once both connections are established, the proxy relays messages between them:
+Once all connections are established, the proxy relays messages across the entire chain:
 
-- HTTP POST messages received from the **Local MCP Client** are forwarded as HTTP POST messages to the **Remote SSE MCP Server**.
-- SSE messages received from the **Remote SSE MCP Server** are forwarded as SSE messages to the **Local MCP Client**.
+- The **MCP Host** initiates requests through the **Local MCP Client**.
+- Messages received via stdin from the **Local MCP Client** are forwarded as HTTP POST messages to the **Remote SSE MCP Server**.
+- SSE messages received from the **Remote SSE MCP Server** are forwarded via stdout to the **Local MCP Client**.
+- The **Local MCP Client** delivers responses back to the **MCP Host**.
 
-This creates a transparent bridge, allowing your local MCP client to communicate with the remote SSE MCP server using the standard MCP HTTP+SSE transport.
+This creates a transparent bridge, allowing your MCP Host (such as Cursor) to communicate with the remote SSE MCP server, effectively translating between the STDIO and HTTP+SSE transport mechanisms defined in the MCP specification.
+
+The proxy also handles OAuth authentication with the remote MCP server, by listening for redirects at the callback port (default 3334) on the `/oauth/callback` path.
 
 ```mermaid
 sequenceDiagram
+    participant Host as MCP Host
     participant Client as Local MCP Client
-    participant Proxy as Local STDIO MCP Proxy Server (mcp-remote-deno)
+    participant Proxy as Local MCP Proxy Server (mcp-remote-deno)
     participant Server as Remote SSE MCP Server
+    participant Browser as Web Browser
 
-    Client->>+Proxy: GET / (Establish SSE connection, http://localhost:3334)
-    Proxy-->>-Client: SSE stream opened, provides POST endpoint (/client-post)
+    Host->>Client: Initialize connection
+    Client->>+Proxy: STDIO connection (stdin/stdout)
+    Proxy-->>-Client: STDIO connection established
 
+    Note over Proxy,Server: OAuth Authentication Flow (if required)
+    Proxy->>Proxy: Start local server on callback port (default 3334)
+    Proxy->>+Server: Request authorization
+    Server-->>-Proxy: Return authorization URL
+    Proxy->>Browser: Open authorization URL in browser
+    Browser->>Server: User authenticates
+    Server->>Browser: Redirects with auth code
+    Browser->>Proxy: Request to /oauth/callback with auth code
+    Proxy->>+Server: Exchange auth code for tokens
+    Server-->>-Proxy: Return access token
+
+    Note over Proxy,Server: Normal Operation After Auth
     Proxy->>+Server: GET / (Establish SSE connection, <server-url>, Headers)
     Server-->>-Proxy: SSE stream opened, provides POST endpoint (/server-post)
 
     loop Message Exchange
-        Client->>Proxy: POST /client-post (MCP Request)
+        Host->>Client: Request function/capability
+        Client->>Proxy: Write to Proxy's stdin (MCP Request)
         Proxy->>Server: POST /server-post (Forwarded MCP Request)
         Server-->>Proxy: SSE event (MCP Response/Notification)
-        Proxy-->>Client: SSE event (Forwarded MCP Response/Notification)
+        Proxy-->>Client: Write to Client's stdin (Forwarded MCP Response/Notification)
+        Client-->>Host: Deliver response/notification
 
         Server-->>Proxy: SSE event (MCP Request/Notification)
-        Proxy-->>Client: SSE event (Forwarded MCP Request/Notification)
-        Client->>Proxy: POST /client-post (MCP Response)
+        Proxy-->>Client: Write to Client's stdin (Forwarded MCP Request/Notification)
+        Client-->>Host: Deliver request/notification
+        Host->>Client: Process and respond
+        Client->>Proxy: Write to Proxy's stdin (MCP Response)
         Proxy->>Server: POST /server-post (Forwarded MCP Response)
     end
 
-    Client->>Proxy: Close Connection
-    Proxy->>Server: Close Connection
+    Host->>Client: Close Connection
+    Client->>Proxy: Close STDIO connection
+    Proxy->>Server: Close HTTP connection
     Server-->>Proxy: Connection Closed
-    Proxy-->>Client: Connection Closed
+    Proxy-->>Client: STDIO connection closed
+    Client-->>Host: Connection Closed
 ```
 
 If either the client or the server disconnects, the proxy ensures the other connection is also terminated gracefully.
