@@ -2,6 +2,8 @@
 
 Connect local MCP (Model Context Protocol) clients (like Claude Desktop, Cursor) that only support stdio connections to remote MCP servers using HTTP+SSE and OAuth authentication. This is a Deno port of the original [mcp-remote](https://github.com/geelen/mcp-remote) npm package, designed to run within the Deno runtime.
 
+[![JSR](https://jsr.io/badges/@mmizutani/mcp-remote-deno)](https://jsr.io/@mmizutani/mcp-remote-deno)
+
 ## Features
 
 - **Bridges local stdio MCP clients** (like Claude Desktop, Cursor) to remote **HTTP+SSE MCP servers**.
