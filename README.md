@@ -61,6 +61,26 @@ Many simpler MCP servers rely on static authentication credentials (like API key
 
 The OAuth approach implemented in this proxy offers significant security benefits while also providing a better user experience through standardized browser-based authentication flows.
 
+### Secure Storage of OAuth Credentials
+
+This proxy requires write access to `~/.mcp-auth` to securely store authentication data:
+
+- **Version-specific subdirectories**: Credentials are stored in `~/.mcp-auth/mcp-remote-deno-VERSION/` to maintain compatibility across proxy versions
+- **Server-specific files**: Each remote server's credentials are stored in files prefixed with a hash of the server URL (e.g., `bd22cb7e2c2f413e874364f5baa5ab5f_tokens.json`)
+- **Segregated credential storage**: For each server, the proxy maintains separate files for:
+  - OAuth client information (`*_client_info.json`)
+  - Access and refresh tokens (`*_tokens.json`)
+  - PKCE code verifiers (`*_code_verifier.txt`)
+  - Process lock files (`*_lock.json`) to prevent concurrent operations
+
+This structured approach ensures that:
+
+1. Credentials for different servers don't interfere with each other
+2. Token refreshes can occur safely without file corruption
+3. Multiple instances of the proxy can coordinate through lock files
+
+**That's why the `--allow-write="$HOME/.mcp-auth"` Deno permission is required** in all usage examples.
+
 ### Why Deno's Security Sandbox for Implementation
 
 This implementation specifically leverages Deno's security-first approach, which requires explicit permissions for file, network, and environment access. This is particularly important for MCP clients, which often handle sensitive API keys and user data. With Deno, you can precisely control which domains the proxy can connect to, which files it can access, and what system operations it can perform - making it a more secure alternative to Node.js implementations. This approach was inspired by similar projects like [@yamanoku/baseline-mcp-server](https://github.com/yamanoku/baseline-mcp-server), which demonstrates how Deno's sandboxed security model can be effectively leveraged for MCP implementations.
@@ -101,6 +121,14 @@ Replace `remote.mcp.server.example.com` with the actual domain of your remote MC
 - First positional argument: The URL of the remote MCP server (required)
 - Second positional argument: Local port for OAuth callback (optional, defaults to 3334)
 - `--header "Name: Value"`: Custom HTTP headers to send (optional, can be repeated)
+
+**Security Permissions:**
+
+The security flags in the command are carefully chosen to balance functionality with the principle of least privilege:
+
+- `--allow-write="$HOME/.mcp-auth"` permits storage of OAuth tokens and synchronization lockfiles in your home directory
+- `--allow-net=...` restricts network access to only localhost and the specific remote server
+- Other permissions enable minimal required functionality while maintaining security
 
 **Examples:**
 
@@ -441,6 +469,13 @@ Example configuration:
 rm -rf ~/.mcp-auth
 ```
 
+This will remove all stored OAuth credentials, forcing a fresh authentication flow the next time you connect. Common situations where clearing this directory helps:
+
+- When you receive OAuth token errors or authentication failures
+- After changing the remote server's authentication mechanisms
+- If you see "Token exchange failed: HTTP 400" errors
+- When a process lock file is preventing new connections
+
 Then restart your MCP client.
 
 ### Check your Deno version
@@ -500,6 +535,25 @@ Token exchange failed: HTTP 400
 ```
 
 You can run `rm -rf ~/.mcp-auth` to clear any locally stored state and tokens.
+
+### Inspecting OAuth Credential Files
+
+To check what credential information is stored for your MCP connections:
+
+```sh
+# List all version-specific credential directories
+ls -la ~/.mcp-auth/
+
+# View contents of a specific version directory
+ls -la ~/.mcp-auth/mcp-remote-deno-0.0.1/
+
+# Examine a specific server's credentials (the hash prefix will vary)
+cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_client_info.json
+cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_tokens.json
+cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_code_verifier.txt
+```
+
+Each remote server will have multiple files with the same hash prefix, storing different aspects of the OAuth session. In most cases, you shouldn't need to manually modify these files.
 
 ### Client Mode
 
