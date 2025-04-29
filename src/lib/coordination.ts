@@ -1,9 +1,15 @@
-import { checkLockfile, createLockfile, deleteLockfile, getConfigFilePath, LockfileData } from './mcp-auth-config'
-import { EventEmitter } from 'events'
-import { Server } from 'http'
-import express from 'express'
-import { AddressInfo } from 'net'
-import { log, setupOAuthCallbackServerWithLongPoll } from './utils'
+import {
+  checkLockfile,
+  createLockfile,
+  deleteLockfile,
+  getConfigFilePath,
+  type LockfileData,
+} from "./mcp-auth-config.ts";
+import type { EventEmitter } from "node:events";
+import type { Server } from "node:http";
+import express from "npm:express";
+import type { AddressInfo } from "node:net";
+import { log, setupOAuthCallbackServerWithLongPoll } from "./utils.ts";
 
 /**
  * Checks if a process with the given PID is running
@@ -12,10 +18,37 @@ import { log, setupOAuthCallbackServerWithLongPoll } from './utils'
  */
 export async function isPidRunning(pid: number): Promise<boolean> {
   try {
-    process.kill(pid, 0) // Doesn't kill the process, just checks if it exists
-    return true
+    // Deno doesn't have a direct equivalent to process.kill(pid, 0)
+    // On non-Windows platforms, we can try to use kill system call to check
+    if (Deno.build.os !== "windows") {
+      try {
+        // Using Deno.run to check if process exists
+        const command = new Deno.Command("kill", {
+          args: ["-0", pid.toString()],
+          stdout: "null",
+          stderr: "null",
+        });
+        const { success } = await command.output();
+        return success;
+      } catch {
+        return false;
+      }
+    } else {
+      // On Windows, use tasklist to check if process exists
+      try {
+        const command = new Deno.Command("tasklist", {
+          args: ["/FI", `PID eq ${pid}`, "/NH"],
+          stdout: "piped",
+        });
+        const { stdout } = await command.output();
+        const output = new TextDecoder().decode(stdout);
+        return output.includes(pid.toString());
+      } catch {
+        return false;
+      }
+    }
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -26,32 +59,35 @@ export async function isPidRunning(pid: number): Promise<boolean> {
  */
 export async function isLockValid(lockData: LockfileData): Promise<boolean> {
   // Check if the lockfile is too old (over 30 minutes)
-  const MAX_LOCK_AGE = 30 * 60 * 1000 // 30 minutes
+  const MAX_LOCK_AGE = 30 * 60 * 1000; // 30 minutes
   if (Date.now() - lockData.timestamp > MAX_LOCK_AGE) {
-    log('Lockfile is too old')
-    return false
+    log("Lockfile is too old");
+    return false;
   }
 
   // Check if the process is still running
   if (!(await isPidRunning(lockData.pid))) {
-    log('Process from lockfile is not running')
-    return false
+    log("Process from lockfile is not running");
+    return false;
   }
 
   // Check if the endpoint is accessible
   try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 1000)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1000);
 
-    const response = await fetch(`http://127.0.0.1:${lockData.port}/wait-for-auth?poll=false`, {
-      signal: controller.signal,
-    })
+    const response = await fetch(
+      `http://127.0.0.1:${lockData.port}/wait-for-auth?poll=false`,
+      {
+        signal: controller.signal,
+      },
+    );
 
-    clearTimeout(timeout)
-    return response.status === 200 || response.status === 202
+    clearTimeout(timeout);
+    return response.status === 200 || response.status === 202;
   } catch (error) {
-    log(`Error connecting to auth server: ${(error as Error).message}`)
-    return false
+    log(`Error connecting to auth server: ${(error as Error).message}`);
+    return false;
   }
 }
 
@@ -61,30 +97,31 @@ export async function isLockValid(lockData: LockfileData): Promise<boolean> {
  * @returns True if authentication completed successfully, false otherwise
  */
 export async function waitForAuthentication(port: number): Promise<boolean> {
-  log(`Waiting for authentication from the server on port ${port}...`)
+  log(`Waiting for authentication from the server on port ${port}...`);
 
   try {
     while (true) {
-      const url = `http://127.0.0.1:${port}/wait-for-auth`
-      log(`Querying: ${url}`)
-      const response = await fetch(url)
+      const url = `http://127.0.0.1:${port}/wait-for-auth`;
+      log(`Querying: ${url}`);
+      const response = await fetch(url);
 
       if (response.status === 200) {
         // Auth completed, but we don't return the code anymore
-        log(`Authentication completed by other instance`)
-        return true
-      } else if (response.status === 202) {
+        log("Authentication completed by other instance");
+        return true;
+      }
+      if (response.status === 202) {
         // Continue polling
-        log(`Authentication still in progress`)
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        log("Authentication still in progress");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } else {
-        log(`Unexpected response status: ${response.status}`)
-        return false
+        log(`Unexpected response status: ${response.status}`);
+        return false;
       }
     }
   } catch (error) {
-    log(`Error waiting for authentication: ${(error as Error).message}`)
-    return false
+    log(`Error waiting for authentication: ${(error as Error).message}`);
+    return false;
   }
 }
 
@@ -99,90 +136,113 @@ export async function coordinateAuth(
   serverUrlHash: string,
   callbackPort: number,
   events: EventEmitter,
-): Promise<{ server: Server; waitForAuthCode: () => Promise<string>; skipBrowserAuth: boolean }> {
+): Promise<
+  {
+    server: Server;
+    waitForAuthCode: () => Promise<string>;
+    skipBrowserAuth: boolean;
+  }
+> {
   // Check for a lockfile (disabled on Windows for the time being)
-  const lockData = process.platform === 'win32' ? null : await checkLockfile(serverUrlHash)
+  const lockData = Deno.build.os === "windows"
+    ? null
+    : await checkLockfile(serverUrlHash);
 
   // If there's a valid lockfile, try to use the existing auth process
   if (lockData && (await isLockValid(lockData))) {
-    log(`Another instance is handling authentication on port ${lockData.port}`)
+    log(`Another instance is handling authentication on port ${lockData.port}`);
 
     try {
       // Try to wait for the authentication to complete
-      const authCompleted = await waitForAuthentication(lockData.port)
+      const authCompleted = await waitForAuthentication(lockData.port);
       if (authCompleted) {
-        log('Authentication completed by another instance')
+        log("Authentication completed by another instance");
 
         // Setup a dummy server - the client will use tokens directly from disk
-        const dummyServer = express().listen(0) // Listen on any available port
+        const dummyServer = express().listen(0, "127.0.0.1"); // Listen on any available port on localhost only
 
         // This shouldn't actually be called in normal operation, but provide it for API compatibility
         const dummyWaitForAuthCode = () => {
-          log('WARNING: waitForAuthCode called in secondary instance - this is unexpected')
+          log(
+            "WARNING: waitForAuthCode called in secondary instance - this is unexpected",
+          );
           // Return a promise that never resolves - the client should use the tokens from disk instead
-          return new Promise<string>(() => {})
-        }
+          return new Promise<string>(() => {});
+        };
 
         return {
           server: dummyServer,
           waitForAuthCode: dummyWaitForAuthCode,
           skipBrowserAuth: true,
-        }
-      } else {
-        log('Taking over authentication process...')
+        };
       }
+      log("Taking over authentication process...");
     } catch (error) {
-      log(`Error waiting for authentication: ${error}`)
+      log(`Error waiting for authentication: ${error}`);
     }
 
     // If we get here, the other process didn't complete auth successfully
-    await deleteLockfile(serverUrlHash)
+    await deleteLockfile(serverUrlHash);
   } else if (lockData) {
     // Invalid lockfile, delete its
-    log('Found invalid lockfile, deleting it')
-    await deleteLockfile(serverUrlHash)
+    log("Found invalid lockfile, deleting it");
+    await deleteLockfile(serverUrlHash);
   }
 
   // Create our own lockfile
-  const { server, waitForAuthCode, authCompletedPromise } = setupOAuthCallbackServerWithLongPoll({
-    port: callbackPort,
-    path: '/oauth/callback',
-    events,
-  })
+  const { server, waitForAuthCode, authCompletedPromise: _ } =
+    setupOAuthCallbackServerWithLongPoll({
+      port: callbackPort,
+      path: "/oauth/callback",
+      events,
+    });
 
   // Get the actual port the server is running on
-  const address = server.address() as AddressInfo
-  const actualPort = address.port
+  const address = server.address() as AddressInfo;
+  const actualPort = address.port;
 
-  log(`Creating lockfile for server ${serverUrlHash} with process ${process.pid} on port ${actualPort}`)
-  await createLockfile(serverUrlHash, process.pid, actualPort)
+  log(
+    `Creating lockfile for server ${serverUrlHash} with process ${Deno.pid} on port ${actualPort}`,
+  );
+  await createLockfile(serverUrlHash, Deno.pid, actualPort);
 
   // Make sure lockfile is deleted on process exit
   const cleanupHandler = async () => {
     try {
-      log(`Cleaning up lockfile for server ${serverUrlHash}`)
-      await deleteLockfile(serverUrlHash)
+      log(`Cleaning up lockfile for server ${serverUrlHash}`);
+      await deleteLockfile(serverUrlHash);
     } catch (error) {
-      log(`Error cleaning up lockfile: ${error}`)
+      log(`Error cleaning up lockfile: ${error}`);
     }
-  }
+  };
 
-  process.once('exit', () => {
+  // Setup exit handlers for Deno
+  // Note: Deno doesn't have process.once but we can use addEventListener
+  // Use unload event instead of beforeunload signal
+  addEventListener("unload", () => {
     try {
-      // Synchronous version for 'exit' event since we can't use async here
-      const configPath = getConfigFilePath(serverUrlHash, 'lock.json')
-      require('fs').unlinkSync(configPath)
-    } catch {}
-  })
+      // Synchronous cleanup
+      const configPath = getConfigFilePath(serverUrlHash, "lock.json");
+      // Use Deno's synchronous file API
+      try {
+        Deno.removeSync(configPath);
+      } catch (_) {
+        // Ignore errors
+      }
+    } catch (_) {
+      // Ignore errors during exit
+    }
+  });
 
   // Also handle SIGINT separately
-  process.once('SIGINT', async () => {
-    await cleanupHandler()
-  })
+  Deno.addSignalListener("SIGINT", async () => {
+    await cleanupHandler();
+    Deno.exit(0);
+  });
 
   return {
     server,
     waitForAuthCode,
     skipBrowserAuth: false,
-  }
+  };
 }

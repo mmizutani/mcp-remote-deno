@@ -1,25 +1,25 @@
-import { EventEmitter } from 'events'
+import type { EventEmitter } from "node:events";
 
 /**
  * Options for creating an OAuth client provider
  */
 export interface OAuthProviderOptions {
   /** Server URL to connect to */
-  serverUrl: string
+  serverUrl: string;
   /** Port for the OAuth callback server */
-  callbackPort: number
+  callbackPort: number;
   /** Path for the OAuth callback endpoint */
-  callbackPath?: string
+  callbackPath?: string;
   /** Directory to store OAuth credentials */
-  configDir?: string
+  configDir?: string;
   /** Client name to use for OAuth registration */
-  clientName?: string
+  clientName?: string;
   /** Client URI to use for OAuth registration */
-  clientUri?: string
+  clientUri?: string;
   /** Software ID to use for OAuth registration */
-  softwareId?: string
+  softwareId?: string;
   /** Software version to use for OAuth registration */
-  softwareVersion?: string
+  softwareVersion?: string;
 }
 
 /**
@@ -27,9 +27,9 @@ export interface OAuthProviderOptions {
  */
 export interface OAuthCallbackServerOptions {
   /** Port for the callback server */
-  port: number
+  port: number;
   /** Path for the callback endpoint */
-  path: string
+  path: string;
   /** Event emitter to signal when auth code is received */
-  events: EventEmitter
+  events: EventEmitter;
 }
