@@ -120,7 +120,7 @@ to the CA certificate file. If using claude_desktop_config.json, this might look
         "--allow-read",
         "--allow-sys=homedir",
         "--allow-run=open",
-        "--allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\"",
+        "--allow-write=\"$HOME/.mcp-auth\"",
         "--allow-net=0.0.0.0,127.0.0.1,localhost",
         "jsr:@mmizutani/mcp-remote-deno",
         "https://remote.mcp.server.example.com/sse"
