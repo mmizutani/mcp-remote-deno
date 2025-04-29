@@ -51,7 +51,7 @@ describe("utils", () => {
 
       // The log message should include the process ID and our message
       const call = consoleErrorSpy.calls[0];
-      assertEquals(call.args.length, 2);
+      assertEquals(call.args.length, 1);
       assertMatch(call.args[0] as string, /^\[\d+\] Test message$/);
     });
 
@@ -63,7 +63,7 @@ describe("utils", () => {
       assertSpyCalls(consoleErrorSpy, 1);
 
       const call = consoleErrorSpy.calls[0];
-      assertEquals(call.args.length, 3);
+      assertEquals(call.args.length, 2);
       assertMatch(call.args[0] as string, /^\[\d+\] Test message$/);
       assertEquals(call.args[1], additionalParam);
     });
