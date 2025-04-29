@@ -1,9 +1,8 @@
 import {
   assertEquals,
-  assertRejects,
 } from "std/assert/mod.ts";
 import { describe, it, afterEach, beforeEach } from "std/testing/bdd.ts";
-import { assertSpyCalls, spy, stub } from "std/testing/mock.ts";
+import { stub } from "std/testing/mock.ts";
 import {
   isPidRunning,
   isLockValid,

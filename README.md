@@ -12,7 +12,7 @@ A Deno wrapper for the [mcp-use](https://github.com/geelen/mcp-remote) proxy ser
 
 ## Prerequisites
 
-- [Deno](https://deno.com/) 1.37.0 or higher
+- [Deno](https://deno.com/)
 
 ## Installation
 
@@ -58,7 +58,7 @@ You can also run the proxy script directly using `deno run`. This requires speci
 
 ```bash
 # Define permissions based on deno.json task
-DENO_PERMISSIONS="--allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost"
+DENO_PERMISSIONS="--allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com"
 
 # Basic usage with specific permissions:
 deno run $DENO_PERMISSIONS src/proxy.ts <server-url> [callback-port]
@@ -192,7 +192,7 @@ If either the client or the server disconnects, the proxy ensures the other conn
 
 ## MCP Server Configuration
 
-You can configure your local MCP client (such as Cursor IDE) to use this proxy by adding an entry to your MCP configuration file.
+You can configure your local MCP client (such as Cursor, Cline, and Claude Desktop) to use this proxy by adding an entry to your MCP configuration file.
 
 For Cursor, edit `~/.cursor/mcp.json` (or create it if it doesn't exist) and add the following configuration:
 
@@ -228,6 +228,6 @@ MIT - See the [LICENSE](LICENSE) file for details.
 
 This project would not be possible without these excellent open source projects:
 
-- [mcp-remote](https://www.npmjs.com/package/mcp-remote) - The original NPM package that this Deno wrapper is based on. Created by Glen Maddern (@geelen), mcp-remote pioneered the approach of connecting local stdio-based MCP clients (like Cursor, Claude Desktop, and Windsurf) to remote MCP servers over HTTP+SSE. It handles the complex OAuth authentication flow and bidirectional proxying between different transport protocols, forming the foundational architecture that this Deno implementation builds upon.
+- [mcp-remote](https://www.npmjs.com/package/mcp-remote) - The original NPM package that this Deno wrapper is based on. Created by Glen Maddern (@geelen), mcp-remote pioneered the approach of connecting local stdio-based MCP clients (like Cursor, Cline and Claude Desktop) to remote MCP servers over HTTP+SSE. It handles the complex OAuth authentication flow and bidirectional proxying between different transport protocols, forming the foundational architecture that this Deno implementation builds upon.
 
 - [@yamanoku/baseline-mcp-server](https://jsr.io/@yamanoku/baseline-mcp-server) - Developed by Okuto Oyama (@yamanoku), this project provided inspiration for implementing an MCP server within Deno's secure runtime environment. Its clean architecture and approach to permission management exemplifies how to properly leverage Deno's sandbox security model while maintaining full compatibility with the MCP specification.
