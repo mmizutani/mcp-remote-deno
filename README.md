@@ -1,76 +1,192 @@
 # mcp-remote-deno
 
-A Deno wrapper for the [mcp-use](https://github.com/geelen/mcp-remote) proxy server that connects to remote MCP (Model Context Protocol) servers.
+Connect local MCP (Model Context Protocol) clients (like Claude Desktop, Cursor) that only support stdio connections to remote MCP servers using HTTP+SSE and OAuth authentication. This is a Deno port of the original [mcp-remote](https://github.com/geelen/mcp-remote) npm package, designed to run within the Deno runtime.
 
 ## Features
 
-- Runs natively in Deno, utilizing NPM compatibility
-- Provides a clean CLI interface
-- Supports custom HTTP headers
-- TypeScript type definitions included
-- Handles OAuth authentication with remote MCP servers
+- **Bridges local stdio MCP clients** (like Claude Desktop, Cursor) to remote **HTTP+SSE MCP servers**.
+- **Handles the standard MCP OAuth authentication flow** automatically, opening the browser for user login and managing token exchange.
+- **Runs natively in the Deno runtime** (no Node.js/npm needed for the proxy itself).
+- **Supports sending custom HTTP headers** to the remote server (e.g., for API keys or bypassing auth).
+- **Configurable local port** for the OAuth callback redirect URL.
+- **Includes a standalone client mode** (`jsr:@mmizutani/mcp-remote-deno/client`) for testing and debugging connections directly, bypassing the need for an MCP client.
+- **Allows insecure HTTP connections** to the remote server via the `--allow-http` flag (use with caution in trusted networks only).
+- **Clean and simple command-line interface.**
+- **Written entirely in TypeScript**, leveraging Deno's security model and features.
+
+## Why is this necessary?
+
+So far, the majority of MCP servers in the wild are installed locally, using the stdio transport. This has some benefits: both the client and the server can implicitly trust each other as the user has granted them both permission to run. Adding secrets like API keys can be done using environment variables and never leave your machine.
+
+But there's a reason most software that _could_ be moved to the web _did_ get moved to the web: it's so much easier to find and fix bugs & iterate on new features when you can push updates to all your users with a single deploy.
+
+With the latest MCP Authorization specification, we now have a secure way of sharing our MCP servers with the world _without_ running code on user's laptops. Or at least, you would, if all the popular MCP _clients_ supported it yet. Most are stdio-only, and those that _do_ support HTTP+SSE don't yet support the OAuth flows required.
+
+Currently, there is only a handful of MCP client implementations that fully support both STDIO transport and HTTP+SSE (Server-Side Events) transport, as can be seen in the [MCP client details](https://modelcontextprotocol.io/clients#client-details). Popular clients like Cursor, Claude Desktop, and many others still primarily rely on STDIO transport or only partially support HTTP+SSE and their SSE handling can sometimes be unstable.
+
+That's where `mcp-remote-deno` comes in. As soon as your chosen MCP client supports remote, authorized servers, you can remove it. Until that time, this tool bridges the gap to allow connection to remote MCP servers.
 
 ## Prerequisites
+
+Deno is required for both using this tool and building it.
 
 - [Deno](https://deno.com/)
 
 ## Installation
 
-No installation is needed if you have Deno installed. You can run the proxy directly.
+No installation is needed if you have [Deno](https://deno.com/) installed. You can run the package directly from JSR (Deno's package registry).
 
-## Usage
+## Usage for End Users
 
-The primary way to use this tool is via the command line to start the proxy server.
+### Running Directly from JSR
 
-### Running with `deno task` (Recommended)
-
-If you have cloned the repository, you can use the predefined Deno task:
+You can run the proxy directly using `deno run` with the JSR package:
 
 ```bash
-# Basic usage: Connects to the server and listens on default port 3334 for OAuth redirects
-deno task proxy:start <server-url>
-
-# Example:
-deno task proxy:start https://remote.mcp.server.example.com
-
-# Specify a custom local port for OAuth redirects:
-deno task proxy:start <server-url> [callback-port]
-
-# Example with custom port 8080:
-deno task proxy:start <server-url> 8080
-
-# Include custom HTTP headers for the connection to the remote server:
-deno task proxy:start <server-url> [callback-port] --header "Header-Name: Header-Value" --header "Another: Value"
-
-# Example with headers:
-deno task proxy:start https://remote.mcp.server.example.com 3334 --header "Authorization: Bearer mytoken" --header "X-Custom-ID: 12345"
+deno run \
+  --allow-env \
+  --allow-read \
+  --allow-sys=homedir \
+  --allow-run=open \
+  --allow-write="$HOME/.mcp-auth" \
+  --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com \
+  jsr:@mmizutani/mcp-remote-deno \
+  https://remote.mcp.server.example.com/sse \
+  [callback-port]
 ```
+
+Replace `remote.mcp.server.example.com` with the actual domain of your remote MCP server.
 
 **Arguments:**
 
-- `<server-url>`: (Required) The URL of the remote MCP server you want to connect to.
-- `[callback-port]`: (Optional) The local port the proxy should listen on for OAuth redirects from the remote MCP server. Defaults to `3334`. Note that if the specified port is unavailable, an open port will be chosen at random.
-- `--header "Name: Value"`: (Optional, repeatable) Custom HTTP headers to send to the remote MCP server during the initial connection.
+- First positional argument: The URL of the remote MCP server (required)
+- Second positional argument: Local port for OAuth callback (optional, defaults to 3334)
+- `--header "Name: Value"`: Custom HTTP headers to send (optional, can be repeated)
 
-### Running with `deno run`
-
-You can also run the proxy script directly using `deno run`. This requires specifying the necessary permissions precisely.
+**Examples:**
 
 ```bash
-# Define permissions based on deno.json task
-DENO_PERMISSIONS="--allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com"
+# Basic usage
+deno run \
+  --allow-env \
+  --allow-read \
+  --allow-sys=homedir \
+  --allow-run=open \
+  --allow-write="$HOME/.mcp-auth" \
+  --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com \
+  jsr:@mmizutani/mcp-remote-deno https://remote.mcp.server.example.com/sse
 
-# Basic usage with specific permissions:
-deno run $DENO_PERMISSIONS src/proxy.ts <server-url> [callback-port]
+# Custom callback port (8080)
+deno run \
+  --allow-env \
+  --allow-read \
+  --allow-sys=homedir \
+  --allow-run=open \
+  --allow-write="$HOME/.mcp-auth" \
+  --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com \
+  jsr:@mmizutani/mcp-remote-deno https://remote.mcp.server.example.com/sse 8080
 
-# Example:
-deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com
-
-# Example with custom port and headers:
-deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com 8080 --header "Authorization: Bearer mytoken"
+# With custom headers
+deno run \
+  --allow-env \
+  --allow-read \
+  --allow-sys=homedir \
+  --allow-run=open \
+  --allow-write="$HOME/.mcp-auth" \
+  --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com \
+  jsr:@mmizutani/mcp-remote-deno \
+   --header "Authorization: Bearer mytoken" \
+  https://remote.mcp.server.example.com/sse
 ```
 
-*Note: Using `deno task proxy:start` is simpler as it automatically applies the correct permissions defined in `deno.json`.*
+### Setting Up Your MCP Client
+
+To configure your MCP client to use this proxy, you'll need to modify your client's MCP configuration file.
+
+#### Cursor
+
+Edit `~/.cursor/mcp.json` (create it if it doesn't exist):
+
+```json
+{
+  "mcpServers": {
+    "my-remote-server": {
+      "type": "stdio",
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+#### Claude Desktop
+
+Edit the configuration at:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "my-remote-server": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+#### Windsurf
+
+Edit `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "my-remote-server": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+**Important Notes:**
+
+1. Replace `remote.mcp.server.example.com` with your actual server domain in both the `--allow-net` flag and the server URL
+2. Replace `my-remote-server` with your preferred name for the server
+3. Restart your MCP client after making these changes
 
 ## API
 
@@ -88,19 +204,6 @@ await startProxy("https://remote.mcp.server.example.com", 3334, {
 await runProxy("https://remote.mcp.server.example.com", 3334, {
   "Authorization": "Bearer token"
 });
-```
-
-## Development
-
-```bash
-# Run in development mode with auto-reload
-deno task dev https://remote.mcp.server.example.com
-
-# Check types
-deno check mod.ts cli.ts
-
-# Format code
-deno fmt
 ```
 
 ## How It Works
@@ -219,6 +322,237 @@ For Cursor, edit `~/.cursor/mcp.json` (or create it if it doesn't exist) and add
 ```
 
 Replace `${mcpServerName}` with a unique name for your remote MCP server, and update the URL in the last argument to point to your actual remote MCP server endpoint.
+
+## Client-Specific Configuration
+
+### Claude Desktop
+
+In order to add an MCP server to Claude Desktop you need to edit the configuration file located at:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+If it does not exist yet, [you may need to enable it under Settings > Developer](https://modelcontextprotocol.io/quickstart/user#2-add-the-filesystem-mcp-server).
+
+Example configuration:
+
+```json
+{
+  "mcpServers": {
+    "remote-example": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after making changes to the configuration file.
+
+### Cursor
+
+[Official Docs](https://docs.cursor.com/context/model-context-protocol). The configuration file is located at `~/.cursor/mcp.json`.
+
+The configuration example is provided in the "MCP Server Configuration" section above.
+
+### Windsurf
+
+[Official Docs](https://docs.codeium.com/windsurf/mcp). The configuration file is located at `~/.codeium/windsurf/mcp_config.json`.
+
+Example configuration:
+
+```json
+{
+  "mcpServers": {
+    "remote-example": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+### Clear your `~/.mcp-auth` directory
+
+`mcp-remote-deno` stores credential information inside `~/.mcp-auth`. If you're having persistent issues, try running:
+
+```sh
+rm -rf ~/.mcp-auth
+```
+
+Then restart your MCP client.
+
+### Check your Deno version
+
+Make sure you have a recent version of Deno installed:
+
+```sh
+deno --version
+```
+
+Update Deno if needed:
+
+```sh
+deno upgrade
+```
+
+### VPN Certificates
+
+If you are behind a VPN and encounter certificate issues, you may need to specify certificate authority files. Set the appropriate environment variables in your MCP client configuration:
+
+```json
+{
+ "mcpServers": {
+    "remote-example": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+        "--cert=/path/to/your/cert.pem",
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+### Check the logs
+
+- [Follow Claude Desktop logs in real-time](https://modelcontextprotocol.io/docs/tools/debugging#debugging-in-claude-desktop)
+- MacOS / Linux:<br/>`tail -n 20 -F ~/Library/Logs/Claude/mcp*.log`
+- For bash on WSL:<br/>`tail -n 20 -f "C:\Users\YourUsername\AppData\Local\Claude\Logs\mcp.log"`
+- Powershell: <br/>`Get-Content "C:\Users\YourUsername\AppData\Local\Claude\Logs\mcp.log" -Wait -Tail 20`
+
+## Debugging
+
+If you encounter the following error, returned by the `/callback` URL:
+
+```
+Authentication Error
+Token exchange failed: HTTP 400
+```
+
+You can run `rm -rf ~/.mcp-auth` to clear any locally stored state and tokens.
+
+### Client Mode
+
+The `mcp-remote-deno` package also provides a client mode (standalone MCP client) that can be used to test your connection directly.
+
+Run the following command to test your connection directly:
+
+```shell
+deno run \
+  --allow-env \
+  --allow-read \
+  --allow-sys=homedir \
+  --allow-run=open \
+  --allow-write="$HOME/.mcp-auth" \
+  --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com \
+  jsr:@mmizutani/mcp-remote-deno/client \
+  https://remote.mcp.server.example.com/sse
+```
+
+This will run through the entire authorization flow and attempt to list the tools & resources at the remote URL. Try this after running `rm -rf ~/.mcp-auth` to see if stale credentials are your problem.
+
+## Development
+
+### Running with `deno task` (Recommended)
+
+If you have cloned the repository, you can use the predefined Deno task:
+
+```bash
+# Basic usage: Connects to the server and listens on default port 3334 for OAuth redirects
+deno task proxy:start <server-url>
+
+# Example:
+deno task proxy:start https://remote.mcp.server.example.com
+
+# Specify a custom local port for OAuth redirects:
+deno task proxy:start <server-url> [callback-port]
+
+# Example with custom port 8080:
+deno task proxy:start <server-url> 8080
+
+# Include custom HTTP headers for the connection to the remote server:
+deno task proxy:start <server-url> [callback-port] --header "Header-Name: Header-Value" --header "Another: Value"
+
+# Example with headers:
+deno task proxy:start https://remote.mcp.server.example.com 3334 --header "Authorization: Bearer mytoken" --header "X-Custom-ID: 12345"
+```
+
+**Arguments:**
+
+- `<server-url>`: (Required) The URL of the remote MCP server you want to connect to.
+- `[callback-port]`: (Optional) The local port the proxy should listen on for OAuth redirects from the remote MCP server. Defaults to `3334`. Note that if the specified port is unavailable, an open port will be chosen at random.
+- `--header "Name: Value"`: (Optional, repeatable) Custom HTTP headers to send to the remote MCP server during the initial connection.
+
+### Running with `deno run`
+
+You can also run the proxy script directly using `deno run`. This requires specifying the necessary permissions precisely.
+
+```bash
+# Define permissions based on deno.json task
+DENO_PERMISSIONS="--allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com"
+
+# Basic usage with specific permissions:
+deno run $DENO_PERMISSIONS src/proxy.ts <server-url> [callback-port]
+
+# Example:
+deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com
+
+# Example with custom port and headers:
+deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com 8080 --header "Authorization: Bearer mytoken"
+```
+
+### Development Workflow
+
+```bash
+# Run in development mode with auto-reload
+deno task dev https://remote.mcp.server.example.com
+
+# Check types
+deno task check
+
+# Format code
+deno fmt
+```
+
+### Building Remote MCP Servers
+
+For instructions on building & deploying remote MCP servers, including acting as a valid OAuth client, see these resources:
+
+- <https://developers.cloudflare.com/agents/guides/remote-mcp-server/>
+- <https://github.com/cloudflare/workers-oauth-provider> - For defining an MCP-compliant OAuth server in Cloudflare Workers
+- <https://github.com/cloudflare/agents/tree/main/examples/mcp> - For defining an `McpAgent` using the [`agents`](https://npmjs.com/package/agents) framework
+- <https://developers.cloudflare.com/agents/guides/test-remote-mcp-server/> - For testing remote MCP servers
 
 ## License
 
