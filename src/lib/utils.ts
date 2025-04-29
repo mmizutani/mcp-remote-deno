@@ -10,15 +10,27 @@ import crypto from "node:crypto";
 import createServer from "./deno-http-server.ts";
 
 // Package version from deno.json (set a constant for now)
+/**
+ * Current version of the MCP Remote package
+ */
 export const MCP_REMOTE_VERSION = "0.0.1";
 
 const pid = Deno.pid;
+/**
+ * Logs a message to the console with the process ID for identification
+ * @param str The message to log
+ * @param rest Additional parameters to log
+ */
 export function log(str: string, ...rest: unknown[]) {
   // Using stderr so that it doesn't interfere with stdout
   console.error(`[${pid}] ${str}`, ...rest);
 }
 
-// Helper function to safely get a message identifier for logging
+/**
+ * Helper function to safely get a message identifier for logging
+ * @param message The message to extract an identifier from
+ * @returns A string or number identifier, or undefined if none could be extracted
+ */
 function getMessageIdentifier(message: unknown): string | number | undefined {
   if (typeof message !== "object" || message === null) return undefined;
 
@@ -36,12 +48,16 @@ function getMessageIdentifier(message: unknown): string | number | undefined {
   return undefined;
 }
 
-// Starting port number to use when finding an available port
+/**
+ * Starting port number to use when finding an available port
+ */
 export const AVAILABLE_PORT_START = 3000;
 
 /**
  * Creates a bidirectional proxy between two transports
- * @param params The transport connections to proxy between
+ * @param params Object containing the transport connections to proxy between
+ * @param params.transportToClient Transport connection to the client
+ * @param params.transportToServer Transport connection to the server
  */
 export function mcpProxy(
   { transportToClient, transportToServer }: {
@@ -190,9 +206,9 @@ export function setupOAuthCallbackServer(options: OAuthCallbackServerOptions) {
 }
 
 /**
- * Sets up an HTTP server to handle OAuth callbacks
- * @param options The server options
- * @returns An object with the server, authCode, and waitForAuthCode function
+ * Sets up an HTTP server to handle OAuth callbacks with long polling support
+ * @param options The server options including port, path, and event emitter
+ * @returns An object with the server, authCode, waitForAuthCode function, and authCompletedPromise
  */
 export function setupOAuthCallbackServerWithLongPoll(
   options: OAuthCallbackServerOptions,

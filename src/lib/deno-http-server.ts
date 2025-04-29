@@ -1,9 +1,14 @@
 /// <reference lib="dom.iterable" />
 import type { Server } from "node:http";
 
-// Simple type definitions for our server
+/**
+ * Interface representing a simplified HTTP request
+ * with only the properties needed for our use case
+ */
 interface RequestLike {
+  /** Query parameters parsed from the URL search params */
   query: Record<string, string>;
+  /** Path portion of the URL */
   path: string;
 }
 
@@ -111,6 +116,7 @@ export class DenoHttpServer {
 
 /**
  * Response builder class that mimics Express Response
+ * Used to provide a simplified Express-like response interface
  */
 export class ResponseBuilder {
   private statusCode = 200;
@@ -160,7 +166,7 @@ export class ResponseBuilder {
 
 /**
  * Create and return a new HTTP server instance
- * @returns A new HTTP server instance
+ * @returns A new HTTP server instance with Express-like API
  */
 export default function createServer(): DenoHttpServer {
   return new DenoHttpServer();

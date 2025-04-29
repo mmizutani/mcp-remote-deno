@@ -24,13 +24,11 @@ import { NodeOAuthClientProvider } from "./lib/node-oauth-client-provider.ts";
 import { coordinateAuth } from "./lib/coordination.ts";
 
 /**
- * Main function to run the proxy
- */
-/**
  * Runs the MCP proxy server
  * @param serverUrl The URL of the remote MCP server to connect to
  * @param callbackPort The port to use for OAuth callback server
  * @param headers Custom HTTP headers to send with requests to the remote server
+ * @returns A Promise that resolves when the proxy is closed
  */
 async function runProxy(
   serverUrl: string,
