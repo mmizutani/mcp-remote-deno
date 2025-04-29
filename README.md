@@ -31,7 +31,7 @@ If you have cloned the repository, you can use the predefined Deno task:
 deno task proxy:start <server-url>
 
 # Example:
-deno task proxy:start https://your-remote-mcp-server.com
+deno task proxy:start https://remote.mcp.server.example.com
 
 # Specify a custom local port for OAuth redirects:
 deno task proxy:start <server-url> [callback-port]
@@ -43,7 +43,7 @@ deno task proxy:start <server-url> 8080
 deno task proxy:start <server-url> [callback-port] --header "Header-Name: Header-Value" --header "Another: Value"
 
 # Example with headers:
-deno task proxy:start https://your-remote-mcp-server.com 3334 --header "Authorization: Bearer mytoken" --header "X-Custom-ID: 12345"
+deno task proxy:start https://remote.mcp.server.example.com 3334 --header "Authorization: Bearer mytoken" --header "X-Custom-ID: 12345"
 ```
 
 **Arguments:**
@@ -64,10 +64,10 @@ DENO_PERMISSIONS="--allow-env --allow-read --allow-sys=homedir --allow-run=open 
 deno run $DENO_PERMISSIONS src/proxy.ts <server-url> [callback-port]
 
 # Example:
-deno run $DENO_PERMISSIONS src/proxy.ts https://your-mcp-server.com
+deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com
 
 # Example with custom port and headers:
-deno run $DENO_PERMISSIONS src/proxy.ts https://your-mcp-server.com 8080 --header "Authorization: Bearer mytoken"
+deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com 8080 --header "Authorization: Bearer mytoken"
 ```
 
 *Note: Using `deno task proxy:start` is simpler as it automatically applies the correct permissions defined in `deno.json`.*
@@ -80,12 +80,12 @@ You can also use the library programmatically in your Deno projects:
 import { startProxy, runProxy } from "jsr:@mmizutani/mcp-remote-deno@^100.1";
 
 // Using the wrapped function
-await startProxy("https://your-mcp-server.com", 3334, {
+await startProxy("https://remote.mcp.server.example.com", 3334, {
   "Authorization": "Bearer token"
 });
 
 // Or using the direct import from mcp-use
-await runProxy("https://your-mcp-server.com", 3334, {
+await runProxy("https://remote.mcp.server.example.com", 3334, {
   "Authorization": "Bearer token"
 });
 ```
@@ -94,7 +94,7 @@ await runProxy("https://your-mcp-server.com", 3334, {
 
 ```bash
 # Run in development mode with auto-reload
-deno task dev https://your-mcp-server.com
+deno task dev https://remote.mcp.server.example.com
 
 # Check types
 deno check mod.ts cli.ts
@@ -190,6 +190,44 @@ sequenceDiagram
 
 If either the client or the server disconnects, the proxy ensures the other connection is also terminated gracefully.
 
+## MCP Server Configuration
+
+You can configure your local MCP client (such as Cursor IDE) to use this proxy by adding an entry to your MCP configuration file.
+
+For Cursor, edit `~/.cursor/mcp.json` (or create it if it doesn't exist) and add the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "type": "stdio",
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-read",
+        "--allow-sys=homedir",
+        "--allow-run=open",
+        "--allow-write=\"$HOME/.mcp-auth\"",
+        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+Replace `${mcpServerName}` with a unique name for your remote MCP server, and update the URL in the last argument to point to your actual remote MCP server endpoint.
+
 ## License
 
 MIT - See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+This project would not be possible without these excellent open source projects:
+
+- [mcp-remote](https://www.npmjs.com/package/mcp-remote) - The original NPM package that this Deno wrapper is based on. Created by Glen Maddern (@geelen), mcp-remote pioneered the approach of connecting local stdio-based MCP clients (like Cursor, Claude Desktop, and Windsurf) to remote MCP servers over HTTP+SSE. It handles the complex OAuth authentication flow and bidirectional proxying between different transport protocols, forming the foundational architecture that this Deno implementation builds upon.
+
+- [@yamanoku/baseline-mcp-server](https://jsr.io/@yamanoku/baseline-mcp-server) - Developed by Okuto Oyama (@yamanoku), this project provided inspiration for implementing an MCP server within Deno's secure runtime environment. Its clean architecture and approach to permission management exemplifies how to properly leverage Deno's sandbox security model while maintaining full compatibility with the MCP specification.

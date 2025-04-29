@@ -107,7 +107,7 @@ async function runProxy(
     ) {
       log(`You may be behind a VPN!
 
-If you are behind a VPN, you can try setting the NODE_EXTRA_CA_CERTS environment variable to point
+If you are behind a VPN, you can try setting the DENO_CERT environment variable to point
 to the CA certificate file. If using claude_desktop_config.json, this might look like:
 
 {
@@ -122,29 +122,11 @@ to the CA certificate file. If using claude_desktop_config.json, this might look
         "--allow-run=open",
         "--allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\"",
         "--allow-net=0.0.0.0,127.0.0.1,localhost",
-        "src/proxy.ts",
-        "https://remote.mcp.server/sse"
+        "jsr:@mmizutani/mcp-remote-deno",
+        "https://remote.mcp.server.example.com/sse"
       ],
       "env": {
-        "NODE_EXTRA_CA_CERTS": "\${your CA certificate file path}.pem"
-      }
-    }
-  }
-}
-
-Alternatively, you can use the predefined task from deno.json:
-
-{
-  "mcpServers": {
-    "\${mcpServerName}": {
-      "command": "deno",
-      "args": [
-        "task",
-        "proxy:start",
-        "https://remote.mcp.server/sse"
-      ],
-      "env": {
-        "NODE_EXTRA_CA_CERTS": "\${your CA certificate file path}.pem"
+        "DENO_CERT": "\${your CA certificate file path}.pem"
       }
     }
   }

@@ -25,7 +25,7 @@ All the most popular MCP clients (Claude Desktop, Cursor & Windsurf) use the fol
       "command": "npx",
       "args": [
         "mcp-remote",
-        "https://remote.mcp.server/sse"
+        "https://remote.mcp.server.example.com/sse"
       ]
     }
   }
@@ -43,7 +43,7 @@ To bypass authentication, or to emit custom headers on all requests to your remo
       "command": "npx",
       "args": [
         "mcp-remote",
-        "https://remote.mcp.server/sse",
+        "https://remote.mcp.server.example.com/sse",
         "--header",
         "Authorization: Bearer ${AUTH_TOKEN}"
       ]
@@ -62,7 +62,7 @@ To bypass authentication, or to emit custom headers on all requests to your remo
   // rest of config...
   "args": [
     "mcp-remote",
-    "https://remote.mcp.server/sse",
+    "https://remote.mcp.server.example.com/sse",
     "--header",
     "Authorization:${AUTH_HEADER}" // note no spaces around ':'
   ]
@@ -81,7 +81,7 @@ To bypass authentication, or to emit custom headers on all requests to your remo
       "args": [
         "-y"
         "mcp-remote",
-        "https://remote.mcp.server/sse"
+        "https://remote.mcp.server.example.com/sse"
       ]
 ```
 
@@ -90,7 +90,7 @@ To bypass authentication, or to emit custom headers on all requests to your remo
 ```json
       "args": [
         "mcp-remote@latest",
-        "https://remote.mcp.server/sse"
+        "https://remote.mcp.server.example.com/sse"
       ]
 ```
 
@@ -99,7 +99,7 @@ To bypass authentication, or to emit custom headers on all requests to your remo
 ```json
       "args": [
         "mcp-remote",
-        "https://remote.mcp.server/sse",
+        "https://remote.mcp.server.example.com/sse",
         "9696"
       ]
 ```
@@ -170,7 +170,7 @@ Then restarting your MCP client.
 
 ### Check your Node version
 
-Make sure that the version of Node you have installed is [18 or 
+Make sure that the version of Node you have installed is [18 or
 higher](https://modelcontextprotocol.io/quickstart/server). Claude
 Desktop will use your system version of Node, even if you have a newer
 version installed elsewhere.
@@ -192,7 +192,7 @@ this might look like:
       "command": "npx",
       "args": [
         "mcp-remote",
-        "https://remote.mcp.server/sse"
+        "https://remote.mcp.server.example.com/sse"
       ],
       "env": {
         "NODE_EXTRA_CA_CERTS": "{your CA certificate file path}.pem"
@@ -225,7 +225,7 @@ You can run `rm -rf ~/.mcp-auth` to clear any locally stored state and tokens.
 Run the following on the command line (not from an MCP server):
 
 ```shell
-npx -p mcp-remote@latest mcp-remote-client https://remote.mcp.server/sse
+npx -p mcp-remote@latest mcp-remote-client https://remote.mcp.server.example.com/sse
 ```
 
 This will run through the entire authorization flow and attempt to list the tools & resources at the remote URL. Try this after running `rm -rf ~/.mcp-auth` to see if stale credentials are your problem, otherwise hopefully the issue will be more obvious in these logs than those in your MCP client.
