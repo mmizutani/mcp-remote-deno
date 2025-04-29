@@ -52,7 +52,6 @@ jobs:
 
       - name: Publish to JSR
         run: |
-          deno publish --allow-dirty --scope=${{ github.repository_owner }}
+          deno publish
         env:
           DENO_VERSION: ${{ steps.get_version.outputs.version }}
-          JSR_NAMESPACE: ${{ github.repository_owner }}
