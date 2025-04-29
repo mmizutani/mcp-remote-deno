@@ -1,4 +1,4 @@
-import { delay } from  "jsr:@std/async@1/delay";
+import { delay } from "jsr:@std/async@1/delay";
 
 /**
  * Options for the open function.

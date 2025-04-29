@@ -91,17 +91,18 @@ This structured approach ensures that:
 
 This implementation specifically leverages Deno's security-first approach, which requires explicit permissions for file, network, and environment access. This is particularly important for MCP clients, which often handle sensitive API keys and user data. With Deno, you can precisely control which domains the proxy can connect to, which files it can access, and what system operations it can perform - making it a more secure alternative to Node.js implementations. This approach was inspired by similar projects like [@yamanoku/baseline-mcp-server](https://github.com/yamanoku/baseline-mcp-server), which demonstrates how Deno's sandboxed security model can be effectively leveraged for MCP implementations.
 
-## Prerequisites
+## Usage for End Users
+
+### Prerequisites
 
 Deno is required for both using this tool and building it.
 
 - [Deno](https://deno.com/)
 
-## Installation
+### Installation
 
 No installation is needed if you have [Deno](https://deno.com/) installed. You can run the package directly from JSR (Deno's package registry).
 
-## Usage for End Users
 
 ### Running Directly from JSR
 
@@ -301,7 +302,7 @@ See [Use MCP servers in VS Code (Preview)](https://code.visualstudio.com/docs/co
 2. Replace `my-remote-server` with your preferred name for the server
 3. Restart your MCP client after making these changes
 
-## API
+### Library API
 
 You can also use the library programmatically in your Deno projects:
 
