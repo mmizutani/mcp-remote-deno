@@ -5,26 +5,65 @@ Connect local MCP (Model Context Protocol) clients (like Claude Desktop, Cursor)
 ## Features
 
 - **Bridges local stdio MCP clients** (like Claude Desktop, Cursor) to remote **HTTP+SSE MCP servers**.
-- **Handles the standard MCP OAuth authentication flow** automatically, opening the browser for user login and managing token exchange.
+- **Fully implements OAuth 2.1 authentication flow**
 - **Runs natively in the Deno runtime** (no Node.js/npm needed for the proxy itself).
 - **Supports sending custom HTTP headers** to the remote server (e.g., for API keys or bypassing auth).
-- **Configurable local port** for the OAuth callback redirect URL.
 - **Includes a standalone client mode** (`jsr:@mmizutani/mcp-remote-deno/client`) for testing and debugging connections directly, bypassing the need for an MCP client.
 - **Allows insecure HTTP connections** to the remote server via the `--allow-http` flag (use with caution in trusted networks only).
 - **Clean and simple command-line interface.**
-- **Written entirely in TypeScript**, leveraging Deno's security model and features.
 
 ## Why is this necessary?
 
+### Why **Remote** MCP Servers?
+
 So far, the majority of MCP servers in the wild are installed locally, using the stdio transport. This has some benefits: both the client and the server can implicitly trust each other as the user has granted them both permission to run. Adding secrets like API keys can be done using environment variables and never leave your machine.
 
-But there's a reason most software that _could_ be moved to the web _did_ get moved to the web: it's so much easier to find and fix bugs & iterate on new features when you can push updates to all your users with a single deploy.
+But there's a reason most software that _could_ be moved to the web _did_ get moved to the web: it's so much easier to find and fix bugs & iterate on new features when you can push updates to all your users with a single deploy. Remote MCP servers allow for centralized deployment, maintenance, and scaling of services independently from client capabilities.
+
+### The STDIO to HTTP+SSE Protocol Challenge
 
 With the latest MCP Authorization specification, we now have a secure way of sharing our MCP servers with the world _without_ running code on user's laptops. Or at least, you would, if all the popular MCP _clients_ supported it yet. Most are stdio-only, and those that _do_ support HTTP+SSE don't yet support the OAuth flows required.
 
 Currently, there is only a handful of MCP client implementations that fully support both STDIO transport and HTTP+SSE (Server-Side Events) transport, as can be seen in the [MCP client details](https://modelcontextprotocol.io/clients#client-details). Popular clients like Cursor, Claude Desktop, and many others still primarily rely on STDIO transport or only partially support HTTP+SSE and their SSE handling can sometimes be unstable.
 
 That's where `mcp-remote-deno` comes in. As soon as your chosen MCP client supports remote, authorized servers, you can remove it. Until that time, this tool bridges the gap to allow connection to remote MCP servers.
+
+### The OAuth Authentication Solution
+
+For remote MCP servers to be secure, they need proper authentication. The MCP specification includes OAuth authentication flows that allow clients to securely connect to remote servers without exposing API keys or credentials.
+
+This proxy fully implements the [MCP Authorization specification (draft)](https://modelcontextprotocol.io/specification/draft/basic/authorization) which requires OAuth 2.1 with appropriate security measures. The implementation leverages the `@modelcontextprotocol/sdk` package while providing all necessary components to fulfill the complete OAuth 2.1 specification, including:
+
+- Handles the OAuth 2.1 authorization code flow with mandatory PKCE for enhanced security
+- Implements server metadata discovery following RFC8414
+- Falls back to default endpoints when metadata discovery is unavailable
+- Securely stores tokens and PKCE code verifiers following OAuth best practices
+- Uses the required `Authorization: Bearer <token>` header format
+- Manages token lifecycle including expiration and renewal
+- Enforces strict redirect URI matching to prevent open redirect vulnerabilities
+- Avoids deprecated grant types like implicit flow and password grant
+- Storing and retrieving PKCE code verifiers
+
+This proxy handles the entire authentication flow, including opening the browser for user login, managing the token exchange, and maintaining the secure connection.
+
+#### OAuth vs. Static Credentials
+
+Many simpler MCP servers rely on static authentication credentials (like API keys) passed through authorization headers. While easier to implement, these approaches have significant limitations compared to OAuth:
+
+| Static Credentials | OAuth 2.1 |
+| --- | --- |
+| Credentials rarely rotate, increasing risk if compromised | Short-lived access tokens with automatic expiration |
+| No granular permission control | Scope-based access with fine-grained permissions |
+| No standardized way to revoke access | Token revocation capabilities |
+| User must manually manage credentials | Automated credential management and refresh |
+| No explicit consent flow | User explicitly approves access and scope |
+| No separation between authentication and authorization | Clear separation of concerns with standardized flows |
+
+The OAuth approach implemented in this proxy offers significant security benefits while also providing a better user experience through standardized browser-based authentication flows.
+
+### Why Deno's Security Sandbox for Implementation
+
+This implementation specifically leverages Deno's security-first approach, which requires explicit permissions for file, network, and environment access. This is particularly important for MCP clients, which often handle sensitive API keys and user data. With Deno, you can precisely control which domains the proxy can connect to, which files it can access, and what system operations it can perform - making it a more secure alternative to Node.js implementations. This approach was inspired by similar projects like [@yamanoku/baseline-mcp-server](https://github.com/yamanoku/baseline-mcp-server), which demonstrates how Deno's sandboxed security model can be effectively leveraged for MCP implementations.
 
 ## Prerequisites
 
@@ -252,7 +291,7 @@ sequenceDiagram
     Client->>+Proxy: STDIO connection (stdin/stdout)
     Proxy-->>-Client: STDIO connection established
 
-    Note over Proxy,Server: OAuth Authentication Flow (if required)
+    Note over Proxy,Server: OAuth 2.1 Authentication Flow (if required)
     Proxy->>Proxy: Start local server on callback port (default 3334)
     Proxy->>+Server: Request authorization
     Server-->>-Proxy: Return authorization URL
