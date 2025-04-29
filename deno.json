@@ -21,9 +21,9 @@
     "client:watch": "deno run --watch --allow-env='MCP_REMOTE_CONFIG_DIR' --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth\" --allow-net=0.0.0.0,127.0.0.1,localhost src/client.ts",
     "check": "deno check src/**/*.ts tests/**/*.ts",
     "fmt": "deno fmt src/ tests/",
-    "test": "deno test --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env='MCP_REMOTE_CONFIG_DIR' --allow-read --allow-sys=homedir tests/",
-    "test:watch": "deno test --watch --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env='MCP_REMOTE_CONFIG_DIR' --allow-read --allow-sys=homedir tests/",
-    "test:coverage": "deno test --coverage=coverage --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env='MCP_REMOTE_CONFIG_DIR' --allow-read --allow-sys=homedir tests/ && deno coverage coverage"
+    "test": "deno test --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env --allow-read --allow-sys=homedir tests/",
+    "test:watch": "deno test --watch --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env --allow-read --allow-sys=homedir tests/",
+    "test:coverage": "deno test --coverage=coverage --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env --allow-read --allow-sys=homedir tests/ && deno coverage coverage"
   },
   "imports": {
     "std/": "https://deno.land/std@0.224.0/",
