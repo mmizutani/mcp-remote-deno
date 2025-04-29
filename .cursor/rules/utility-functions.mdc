@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
 # Utility Functions
@@ -9,7 +9,7 @@ The MCP Remote package includes various utility functions in [src/lib/utils.ts](
 
 ## Key Constants
 
-- `MCP_REMOTE_VERSION`: The current version of the MCP Remote package (currently "0.0.1")
+- `MCP_REMOTE_VERSION`: The current version of the MCP Remote package
 - `AVAILABLE_PORT_START`: The starting port number for finding available ports (3000)
 
 ## OAuth and Transport Functions

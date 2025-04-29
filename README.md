@@ -87,6 +87,8 @@ This structured approach ensures that:
 
 **That's why the `--allow-write="$HOME/.mcp-auth"` Deno permission is required** in all usage examples.
 
+You can set the `MCP_REMOTE_CONFIG_DIR` environment variable to point to a different directory for storing the credentials if necessary.
+
 ### Why Deno's Security Sandbox for Implementation
 
 This implementation specifically leverages Deno's security-first approach, which requires explicit permissions for file, network, and environment access. This is particularly important for MCP clients, which often handle sensitive API keys and user data. With Deno, you can precisely control which domains the proxy can connect to, which files it can access, and what system operations it can perform - making it a more secure alternative to Node.js implementations. This approach was inspired by similar projects like [@yamanoku/baseline-mcp-server](https://github.com/yamanoku/baseline-mcp-server), which demonstrates how Deno's sandboxed security model can be effectively leveraged for MCP implementations.
@@ -97,7 +99,7 @@ This implementation specifically leverages Deno's security-first approach, which
 
 Deno is required for both using this tool and building it.
 
-- [Deno](https://deno.com/)
+- [Deno](https://deno.com/) (v2.0.0 or later)
 
 ### Installation
 
@@ -110,7 +112,7 @@ You can run the proxy directly using `deno run` with the JSR package:
 
 ```bash
 deno run \
-  --allow-env \
+  --allow-env='MCP_REMOTE_CONFIG_DIR' \
   --allow-read \
   --allow-sys=homedir \
   --allow-run=open \
@@ -142,7 +144,7 @@ The security flags in the command are carefully chosen to balance functionality 
 ```bash
 # Basic usage
 deno run \
-  --allow-env \
+  --allow-env='MCP_REMOTE_CONFIG_DIR' \
   --allow-read \
   --allow-sys=homedir \
   --allow-run=open \
@@ -152,7 +154,7 @@ deno run \
 
 # Custom callback port (8080)
 deno run \
-  --allow-env \
+  --allow-env='MCP_REMOTE_CONFIG_DIR' \
   --allow-read \
   --allow-sys=homedir \
   --allow-run=open \
@@ -162,7 +164,7 @@ deno run \
 
 # With custom headers
 deno run \
-  --allow-env \
+  --allow-env='MCP_REMOTE_CONFIG_DIR' \
   --allow-read \
   --allow-sys=homedir \
   --allow-run=open \
@@ -189,7 +191,7 @@ Edit `~/.cursor/mcp.json` (create it if it doesn't exist):
       "command": "deno",
       "args": [
         "run",
-        "--allow-env",
+        "--allow-env='MCP_REMOTE_CONFIG_DIR'",
         "--allow-read",
         "--allow-sys=homedir",
         "--allow-run=open",
@@ -223,7 +225,7 @@ If it does not exist yet, [you may need to enable it under Settings > Developer]
       "command": "deno",
       "args": [
         "run",
-        "--allow-env",
+        "--allow-env='MCP_REMOTE_CONFIG_DIR'",
         "--allow-read",
         "--allow-sys=homedir",
         "--allow-run=open",
@@ -279,7 +281,7 @@ or your user settings`settings.json`
         "command": "deno",
         "args": [
           "run",
-          "--allow-env",
+          "--allow-env='MCP_REMOTE_CONFIG_DIR'",
           "--allow-read",
           "--allow-sys=homedir",
           "--allow-run=open",
@@ -451,7 +453,7 @@ If you are behind a VPN and encounter certificate issues, you may need to specif
       "command": "deno",
       "args": [
         "run",
-        "--allow-env",
+        "--allow-env='MCP_REMOTE_CONFIG_DIR'",
         "--allow-read",
         "--allow-sys=homedir",
         "--allow-run=open",
@@ -493,12 +495,12 @@ To check what credential information is stored for your MCP connections:
 ls -la ~/.mcp-auth/
 
 # View contents of a specific version directory
-ls -la ~/.mcp-auth/mcp-remote-deno-0.0.1/
+ls -la ~/.mcp-auth/mcp-remote-deno-*
 
 # Examine a specific server's credentials (the hash prefix will vary)
-cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_client_info.json
-cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_tokens.json
-cat ~/.mcp-auth/mcp-remote-deno-0.0.1/[hash]_code_verifier.txt
+cat ~/.mcp-auth/mcp-remote-deno-<version>/[hash]_client_info.json
+cat ~/.mcp-auth/mcp-remote-deno-<version>/[hash]_tokens.json
+cat ~/.mcp-auth/mcp-remote-deno-<version>/[hash]_code_verifier.txt
 ```
 
 Each remote server will have multiple files with the same hash prefix, storing different aspects of the OAuth session. In most cases, you shouldn't need to manually modify these files.
@@ -511,7 +513,7 @@ Run the following command to test your connection directly:
 
 ```shell
 deno run \
-  --allow-env \
+  --allow-env='MCP_REMOTE_CONFIG_DIR' \
   --allow-read \
   --allow-sys=homedir \
   --allow-run=open \
@@ -561,7 +563,7 @@ You can also run the proxy script directly using `deno run`. This requires speci
 
 ```bash
 # Define permissions based on deno.json task
-DENO_PERMISSIONS="--allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com"
+DENO_PERMISSIONS="--allow-env='MCP_REMOTE_CONFIG_DIR' --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth\" --allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com"
 
 # Basic usage with specific permissions:
 deno run $DENO_PERMISSIONS src/proxy.ts <server-url> [callback-port]
@@ -576,6 +578,8 @@ deno run $DENO_PERMISSIONS src/proxy.ts https://remote.mcp.server.example.com 80
 ### Development Workflow
 
 ```bash
+deno install
+
 # Run in development mode with auto-reload
 deno task dev https://remote.mcp.server.example.com
 
