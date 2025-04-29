@@ -1,4 +1,4 @@
-import { delay } from "std/async/delay.ts";
+import { delay } from "async/delay.ts";
 
 /**
  * Options for the open function.

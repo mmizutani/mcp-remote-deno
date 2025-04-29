@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/// <reference lib="deno.ns" />
 
 /**
  * MCP Client with OAuth support

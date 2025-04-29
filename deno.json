@@ -28,6 +28,7 @@
   "imports": {
     "std/": "https://deno.land/std@0.224.0/",
     "node/": "https://deno.land/std@0.224.0/node/",
+    "async/": "https://deno.land/std@0.224.0/async/",
     "@modelcontextprotocol/sdk/client/auth.js": "npm:@modelcontextprotocol/sdk@1.10.2/client/auth.js",
     "@modelcontextprotocol/sdk/client/index.js": "npm:@modelcontextprotocol/sdk@1.10.2/client/index.js",
     "@modelcontextprotocol/sdk/client/sse.js": "npm:@modelcontextprotocol/sdk@1.10.2/client/sse.js",
