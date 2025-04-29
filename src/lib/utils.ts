@@ -10,7 +10,7 @@ import crypto from "node:crypto";
 import createServer from "./deno-http-server.ts";
 
 // Package version from deno.json (set a constant for now)
-export const MCP_REMOTE_VERSION = "1.0.0"; // TODO: Find better way to get version in Deno
+export const MCP_REMOTE_VERSION = "0.0.1"; // TODO: Find better way to get version in Deno
 
 const pid = Deno.pid;
 export function log(str: string, ...rest: unknown[]) {

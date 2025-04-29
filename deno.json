@@ -1,6 +1,6 @@
 {
   "name": "@legalforce/mcp-remote-deno",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Deno wrapper for mcp-use proxy server",
   "exports": {
     ".": "./src/proxy.ts",
@@ -14,10 +14,10 @@
     ]
   },
   "tasks": {
-    "proxy:start": "deno run --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-1.0.0\" --allow-net=0.0.0.0,127.0.0.1,localhost src/proxy.ts",
-    "proxy:watch": "deno run --watch --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-1.0.0\" --allow-net=0.0.0.0,127.0.0.1,localhost src/proxy.ts",
-    "client:start": "deno run --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-1.0.0\" --allow-net=0.0.0.0,127.0.0.1,localhost src/client.ts",
-    "client:watch": "deno run --watch --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-1.0.0\" --allow-net=0.0.0.0,127.0.0.1,localhost src/client.ts",
+    "proxy:start": "deno run --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost src/proxy.ts",
+    "proxy:watch": "deno run --watch --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost src/proxy.ts",
+    "client:start": "deno run --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost src/client.ts",
+    "client:watch": "deno run --watch --allow-env --allow-read --allow-sys=homedir --allow-run=open --allow-write=\"$HOME/.mcp-auth/mcp-remote-deno-0.0.1\" --allow-net=0.0.0.0,127.0.0.1,localhost src/client.ts",
     "test": "deno test --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env --allow-read --allow-sys=homedir tests/",
     "test:watch": "deno test --watch --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env --allow-read --allow-sys=homedir tests/",
     "test:coverage": "deno test --coverage=coverage --allow-net=0.0.0.0,127.0.0.1,localhost --allow-env --allow-read --allow-sys=homedir tests/ && deno coverage coverage"
