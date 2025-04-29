@@ -7,9 +7,9 @@ import {
 } from "./mcp-auth-config.ts";
 import type { EventEmitter } from "node:events";
 import type { Server } from "node:http";
-import express from "npm:express";
 import type { AddressInfo } from "node:net";
 import { log, setupOAuthCallbackServerWithLongPoll } from "./utils.ts";
+import createServer from "./deno-http-server.ts";
 
 /**
  * Checks if a process with the given PID is running
@@ -159,7 +159,7 @@ export async function coordinateAuth(
         log("Authentication completed by another instance");
 
         // Setup a dummy server - the client will use tokens directly from disk
-        const dummyServer = express().listen(0, "127.0.0.1"); // Listen on any available port on localhost only
+        const dummyServer = createServer().listen(0, "127.0.0.1"); // Listen on any available port on localhost only
 
         // This shouldn't actually be called in normal operation, but provide it for API compatibility
         const dummyWaitForAuthCode = () => {
