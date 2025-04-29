@@ -1,6 +1,7 @@
 {
   "version": "4",
   "specifiers": {
+    "jsr:@std/async@1": "1.0.12",
     "npm:@modelcontextprotocol/sdk@*": "1.10.2_express@5.1.0_zod@3.24.3",
     "npm:@modelcontextprotocol/sdk@1.10.2": "1.10.2_express@5.1.0_zod@3.24.3",
     "npm:@modelcontextprotocol/sdk@^1.9.0": "1.10.2_express@5.1.0_zod@3.24.3",
@@ -16,6 +17,11 @@
     "npm:tsup@^8.4.0": "8.4.0_typescript@5.8.3_esbuild@0.25.3_tsx@4.19.3",
     "npm:tsx@^4.19.3": "4.19.3",
     "npm:typescript@^5.8.2": "5.8.3"
+  },
+  "jsr": {
+    "@std/async@1.0.12": {
+      "integrity": "d1bfcec459e8012846fe4e38dfc4241ab23240ecda3d8d6dfcf6d81a632e803d"
+    }
   },
   "npm": {
     "@esbuild/aix-ppc64@0.25.3": {
