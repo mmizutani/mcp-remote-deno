@@ -1,4 +1,3 @@
-/// <reference lib="dom.iterable" />
 import type { Server } from "node:http";
 
 /**
