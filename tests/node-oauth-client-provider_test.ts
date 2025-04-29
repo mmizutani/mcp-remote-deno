@@ -5,11 +5,7 @@ import {
   assertRejects,
 } from "std/assert/mod.ts";
 import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
-import {
-  assertSpyCallArg,
-  assertSpyCalls,
-  spy,
-} from "std/testing/mock.ts";
+import { assertSpyCallArg, assertSpyCalls, spy } from "std/testing/mock.ts";
 import type { Spy } from "std/testing/mock.ts";
 import { NodeOAuthClientProvider } from "../src/lib/node-oauth-client-provider.ts";
 import {
