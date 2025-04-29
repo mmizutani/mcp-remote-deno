@@ -94,7 +94,9 @@ export default async function open(
     if (!success) {
       const errorDetails = new TextDecoder().decode(stderr).trim();
       const stdoutDetails = new TextDecoder().decode(stdout).trim();
-      let errorMessage = `Failed to open "${target}". Command "${command} ${args.join(" ")}" exited with code ${code}.`;
+      let errorMessage = `Failed to open "${target}". Command "${command} ${
+        args.join(" ")
+      }" exited with code ${code}.`;
       if (errorDetails) errorMessage += `\nStderr: ${errorDetails}`;
       if (stdoutDetails) errorMessage += `\nStdout: ${stdoutDetails}`; // Include stdout too
       throw new Error(errorMessage);
@@ -109,10 +111,11 @@ export default async function open(
       // xdg-open often returns immediately. Add a small delay as a basic wait.
       await delay(1000); // Wait 1 second (adjust as necessary)
     }
-
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      throw new Error(`Failed to open "${target}": Command not found: ${command}`);
+      throw new Error(
+        `Failed to open "${target}": Command not found: ${command}`,
+      );
     }
     // Re-throw other errors or wrap them
     throw error instanceof Error ? error : new Error(String(error));

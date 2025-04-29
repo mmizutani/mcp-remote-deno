@@ -13,14 +13,18 @@ interface RequestLike {
  */
 export class DenoHttpServer {
   private server: Deno.HttpServer | null = null;
-  private routes: Map<string, (req: Request) => Promise<Response> | Response> = new Map();
+  private routes: Map<string, (req: Request) => Promise<Response> | Response> =
+    new Map();
 
   /**
    * Register a GET route handler
    * @param path The path to handle
    * @param handler The handler function
    */
-  get(path: string, handler: (req: RequestLike, res: ResponseBuilder) => void): void {
+  get(
+    path: string,
+    handler: (req: RequestLike, res: ResponseBuilder) => void,
+  ): void {
     this.routes.set(path, async (request: Request) => {
       const url = new URL(request.url);
       const searchParams = url.searchParams;
@@ -51,12 +55,16 @@ export class DenoHttpServer {
    * @param hostname Optional hostname to bind to
    * @param callback Optional callback when server is ready
    */
-  listen(port: number, hostname?: string | (() => void), callback?: () => void): Server {
+  listen(
+    port: number,
+    hostname?: string | (() => void),
+    callback?: () => void,
+  ): Server {
     // Handle optional hostname parameter
     let hostnameStr: string | undefined;
     let callbackFn = callback;
 
-    if (typeof hostname === 'function') {
+    if (typeof hostname === "function") {
       callbackFn = hostname;
       hostnameStr = undefined;
     } else {
@@ -79,7 +87,7 @@ export class DenoHttpServer {
 
         // Route not found
         return new Response("Not Found", { status: 404 });
-      }
+      },
     });
 
     // Return a dummy server object that mimics Node's HTTP server

@@ -1,15 +1,15 @@
 import { assertEquals, assertMatch, assertRejects } from "std/assert/mod.ts";
 import {
+  AVAILABLE_PORT_START,
+  findAvailablePort,
   getServerUrlHash,
   log,
   MCP_REMOTE_VERSION,
-  findAvailablePort,
-  setupSignalHandlers,
   parseCommandLineArgs,
-  AVAILABLE_PORT_START,
+  setupSignalHandlers,
 } from "../src/lib/utils.ts";
 import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
-import { assertSpyCalls, spy, type MethodSpy } from "std/testing/mock.ts";
+import { assertSpyCalls, type MethodSpy, spy } from "std/testing/mock.ts";
 import type net from "node:net";
 import type process from "node:process";
 
@@ -99,7 +99,11 @@ describe("utils", () => {
 
   describe("findAvailablePort", () => {
     let mockServer: MockServer;
-    let listenSpy: MethodSpy<MockServer, [port: number, callback: () => void], MockServer>;
+    let listenSpy: MethodSpy<
+      MockServer,
+      [port: number, callback: () => void],
+      MockServer
+    >;
     let closeSpy: MethodSpy<MockServer, [callback: () => void], MockServer>;
 
     beforeEach(() => {
@@ -107,21 +111,21 @@ describe("utils", () => {
       mockServer = {
         listen: (_port: number, callback: () => void) => {
           // Properly invoke callback
-          if (typeof callback === 'function') {
+          if (typeof callback === "function") {
             callback();
           }
           return mockServer;
         },
         close: (callback: () => void) => {
           // Properly invoke callback
-          if (typeof callback === 'function') {
+          if (typeof callback === "function") {
             callback();
           }
           return mockServer;
         },
         on: (_event: string, _callback: () => void) => {
           return mockServer;
-        }
+        },
       };
 
       // Create properly typed spies
@@ -137,10 +141,12 @@ describe("utils", () => {
 
     it("returns the first available port", async () => {
       // Mock the server address method to return the expected port
-      (mockServer as unknown as { address(): { port: number } }).address = () => ({ port: AVAILABLE_PORT_START });
+      (mockServer as unknown as { address(): { port: number } }).address =
+        () => ({ port: AVAILABLE_PORT_START });
 
       // Mock event handlers
-      const eventHandlers: Record<string, Array<(...args: unknown[]) => void>> = {};
+      const eventHandlers: Record<string, Array<(...args: unknown[]) => void>> =
+        {};
       mockServer.on = (event: string, callback: () => void) => {
         if (!eventHandlers[event]) {
           eventHandlers[event] = [];
@@ -169,11 +175,16 @@ describe("utils", () => {
 
     it("increments port if initial port is unavailable", async () => {
       // Mock the server address method to return the incremented port
-      (mockServer as unknown as { address(): { port: number } }).address = () => ({ port: AVAILABLE_PORT_START + 1 });
+      (mockServer as unknown as { address(): { port: number } }).address =
+        () => ({ port: AVAILABLE_PORT_START + 1 });
 
       // Mock event handlers
-      const eventHandlers: Record<string, Array<(...args: unknown[]) => void>> = {};
-      mockServer.on = (event: string, callback: (...args: unknown[]) => void) => {
+      const eventHandlers: Record<string, Array<(...args: unknown[]) => void>> =
+        {};
+      mockServer.on = (
+        event: string,
+        callback: (...args: unknown[]) => void,
+      ) => {
         if (!eventHandlers[event]) {
           eventHandlers[event] = [];
         }
@@ -188,7 +199,9 @@ describe("utils", () => {
         if (callCount === 1) {
           // First call should fail with EADDRINUSE
           if (eventHandlers.error) {
-            const error = new Error("Address in use") as Error & { code?: string };
+            const error = new Error("Address in use") as Error & {
+              code?: string;
+            };
             error.code = "EADDRINUSE";
             for (const handler of eventHandlers.error) {
               handler(error);
@@ -215,8 +228,12 @@ describe("utils", () => {
 
     it("throws after MAX_PORT_ATTEMPTS", async () => {
       // Mock event handlers
-      const eventHandlers: Record<string, Array<(...args: unknown[]) => void>> = {};
-      mockServer.on = (event: string, callback: (...args: unknown[]) => void) => {
+      const eventHandlers: Record<string, Array<(...args: unknown[]) => void>> =
+        {};
+      mockServer.on = (
+        event: string,
+        callback: (...args: unknown[]) => void,
+      ) => {
         if (!eventHandlers[event]) {
           eventHandlers[event] = [];
         }
@@ -227,7 +244,9 @@ describe("utils", () => {
       // Always trigger error event with EADDRINUSE
       mockServer.listen = (_port: number, _callback: () => void) => {
         if (eventHandlers.error) {
-          const error = new Error("Address in use") as Error & { code?: string };
+          const error = new Error("Address in use") as Error & {
+            code?: string;
+          };
           error.code = "EADDRINUSE";
           for (const handler of eventHandlers.error) {
             handler(error);
@@ -239,7 +258,7 @@ describe("utils", () => {
       await assertRejects(
         () => findAvailablePort(mockServer as unknown as net.Server),
         Error,
-        "Timeout finding available port"
+        "Timeout finding available port",
       );
     });
   });
@@ -255,7 +274,9 @@ describe("utils", () => {
       originalFindAvailablePort = findAvailablePort;
 
       // Mock findAvailablePort to avoid network access
-      (globalThis as unknown as GlobalWithFindPort).findAvailablePort = (port: number) => Promise.resolve(port);
+      (globalThis as unknown as GlobalWithFindPort).findAvailablePort = (
+        port: number,
+      ) => Promise.resolve(port);
 
       // Create a mock process object
       globalThis.process = {
@@ -269,7 +290,8 @@ describe("utils", () => {
     afterEach(() => {
       // Restore original process and findAvailablePort
       globalThis.process = originalProcess;
-      (globalThis as unknown as GlobalWithFindPort).findAvailablePort = originalFindAvailablePort;
+      (globalThis as unknown as GlobalWithFindPort).findAvailablePort =
+        originalFindAvailablePort;
     });
 
     it("parses valid arguments", async () => {
@@ -287,7 +309,8 @@ describe("utils", () => {
       // Mock findAvailablePort specifically for this test
       const mockFindPort = spy(() => Promise.resolve(3000));
       // Replace the global findAvailablePort with our mock
-      (globalThis as unknown as GlobalWithFindPort).findAvailablePort = mockFindPort;
+      (globalThis as unknown as GlobalWithFindPort).findAvailablePort =
+        mockFindPort;
 
       const args = ["https://example.com"];
       const defaultPort = 3000;
@@ -309,7 +332,7 @@ describe("utils", () => {
           await parseCommandLineArgs(args, defaultPort, usage);
         },
         Error,
-        "Process exit called"
+        "Process exit called",
       );
     });
 
@@ -322,7 +345,7 @@ describe("utils", () => {
         async () => {
           await parseCommandLineArgs(args, defaultPort, usage);
         },
-        Error
+        Error,
       );
     });
 
@@ -335,7 +358,7 @@ describe("utils", () => {
         async () => {
           await parseCommandLineArgs(args, defaultPort, usage);
         },
-        Error
+        Error,
       );
     });
   });

@@ -20,17 +20,17 @@ export function log(str: string, ...rest: unknown[]) {
 
 // Helper function to safely get a message identifier for logging
 function getMessageIdentifier(message: unknown): string | number | undefined {
-  if (typeof message !== 'object' || message === null) return undefined;
+  if (typeof message !== "object" || message === null) return undefined;
 
   // Check if it's a request or notification with a method
-  if ('method' in message && message.method !== undefined) {
+  if ("method" in message && message.method !== undefined) {
     return String(message.method);
   }
 
   // Check if it's a response with an id
-  if ('id' in message && message.id !== undefined) {
+  if ("id" in message && message.id !== undefined) {
     const id = message.id;
-    return typeof id === 'string' || typeof id === 'number' ? id : undefined;
+    return typeof id === "string" || typeof id === "number" ? id : undefined;
   }
 
   return undefined;
@@ -295,8 +295,12 @@ export function findAvailablePort(
   serverOrPort?: number | net.Server,
 ): Promise<number> {
   // Handle if server parameter is a number (preferred port)
-  const preferredPort = typeof serverOrPort === "number" ? serverOrPort : undefined;
-  const serverToUse = typeof serverOrPort !== "number" ? (serverOrPort as net.Server) : net.createServer();
+  const preferredPort = typeof serverOrPort === "number"
+    ? serverOrPort
+    : undefined;
+  const serverToUse = typeof serverOrPort !== "number"
+    ? (serverOrPort as net.Server)
+    : net.createServer();
   let hasResolved = false;
 
   // Maximum number of port attempts before giving up

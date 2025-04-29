@@ -1,5 +1,5 @@
 import { assertEquals, assertExists } from "std/assert/mod.ts";
-import { describe, it, beforeEach } from "std/testing/bdd.ts";
+import { beforeEach, describe, it } from "std/testing/bdd.ts";
 import { mcpProxy } from "../src/lib/utils.ts";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
@@ -14,7 +14,7 @@ class MockTransport implements Transport {
   public messages: unknown[] = [];
   public errors: Error[] = [];
 
-  constructor(public name: string) { }
+  constructor(public name: string) {}
 
   start(): Promise<void> {
     // Mock start method - does nothing

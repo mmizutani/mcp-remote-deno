@@ -1,5 +1,8 @@
-import { describe, it, beforeEach, afterEach } from "std/testing/bdd.ts";
-import { DenoHttpServer, ResponseBuilder } from "../src/lib/deno-http-server.ts";
+import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
+import {
+  DenoHttpServer,
+  ResponseBuilder,
+} from "../src/lib/deno-http-server.ts";
 import { assertEquals } from "std/assert/mod.ts";
 
 describe("DenoHttpServer", () => {
@@ -36,7 +39,9 @@ describe("DenoHttpServer", () => {
     });
 
     // Send a request to the server
-    const response = await fetch(`http://localhost:${testPort}/test?param=value`);
+    const response = await fetch(
+      `http://localhost:${testPort}/test?param=value`,
+    );
     const text = await response.text();
 
     // Verify the response
@@ -57,7 +62,9 @@ describe("DenoHttpServer", () => {
       localServerInstance = server.listen(localTestPort, "localhost");
 
       // Send a request to a non-existent route
-      const response = await fetch(`http://localhost:${localTestPort}/non-existent`);
+      const response = await fetch(
+        `http://localhost:${localTestPort}/non-existent`,
+      );
 
       // Verify the response
       assertEquals(response.status, 404);

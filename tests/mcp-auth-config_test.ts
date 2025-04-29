@@ -1,20 +1,20 @@
 import {
   assertEquals,
-  assertStringIncludes,
   assertRejects,
+  assertStringIncludes,
 } from "std/assert/mod.ts";
-import { describe, it, afterEach, beforeEach } from "std/testing/bdd.ts";
+import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
 import {
+  checkLockfile,
+  createLockfile,
+  deleteConfigFile,
+  deleteLockfile,
+  ensureConfigDir,
   getConfigDir,
   getConfigFilePath,
-  ensureConfigDir,
-  createLockfile,
-  checkLockfile,
-  deleteLockfile,
   readJsonFile,
-  writeJsonFile,
-  deleteConfigFile,
   readTextFile,
+  writeJsonFile,
   writeTextFile,
 } from "../src/lib/mcp-auth-config.ts";
 import { MCP_REMOTE_VERSION } from "../src/lib/utils.ts";
@@ -111,7 +111,7 @@ describe("mcp-auth-config", () => {
       await assertRejects(
         () => ensureConfigDir(),
         Error,
-        "Test mkdir error"
+        "Test mkdir error",
       );
     });
   });
@@ -143,12 +143,14 @@ describe("mcp-auth-config", () => {
       writeTextFileSpy = spy((_path: string | URL, _data: string) => {
         return Promise.resolve();
       }) as unknown as ReturnType<typeof spy<typeof Deno.writeTextFile>>;
-      Deno.writeTextFile = writeTextFileSpy as unknown as typeof Deno.writeTextFile;
+      Deno.writeTextFile =
+        writeTextFileSpy as unknown as typeof Deno.writeTextFile;
 
       readTextFileSpy = spy((_path: string | URL) => {
         return Promise.resolve(JSON.stringify(testData));
       }) as unknown as ReturnType<typeof spy<typeof Deno.readTextFile>>;
-      Deno.readTextFile = readTextFileSpy as unknown as typeof Deno.readTextFile;
+      Deno.readTextFile =
+        readTextFileSpy as unknown as typeof Deno.readTextFile;
 
       removeSpy = spy((_path: string | URL) => {
         return Promise.resolve();
@@ -171,7 +173,10 @@ describe("mcp-auth-config", () => {
       assertSpyCalls(writeTextFileSpy, 1);
       const expectedPath = getConfigFilePath(testHash, testFilename);
       assertEquals(writeTextFileSpy.calls[0].args[0], expectedPath);
-      assertEquals(writeTextFileSpy.calls[0].args[1], JSON.stringify(testData, null, 2));
+      assertEquals(
+        writeTextFileSpy.calls[0].args[1],
+        JSON.stringify(testData, null, 2),
+      );
 
       // Define a schema for parsing the JSON
       const parseFunc = {
@@ -236,7 +241,11 @@ describe("mcp-auth-config", () => {
 
       // Verify readTextFile was called
       assertSpyCalls(Deno.readTextFile as unknown as ReturnType<typeof spy>, 1);
-      assertEquals((Deno.readTextFile as unknown as ReturnType<typeof spy>).calls[0].args[0], expectedPath);
+      assertEquals(
+        (Deno.readTextFile as unknown as ReturnType<typeof spy>).calls[0]
+          .args[0],
+        expectedPath,
+      );
       assertEquals(result, testText);
     });
 
@@ -250,7 +259,7 @@ describe("mcp-auth-config", () => {
       await assertRejects(
         () => readTextFile(testHash, testFilename, "Custom error message"),
         Error,
-        "Custom error message"
+        "Custom error message",
       );
     });
   });
@@ -285,12 +294,14 @@ describe("mcp-auth-config", () => {
       writeTextFileSpy = spy((_path: string | URL, _data: string) => {
         return Promise.resolve();
       }) as unknown as ReturnType<typeof spy<typeof Deno.writeTextFile>>;
-      Deno.writeTextFile = writeTextFileSpy as unknown as typeof Deno.writeTextFile;
+      Deno.writeTextFile =
+        writeTextFileSpy as unknown as typeof Deno.writeTextFile;
 
       readTextFileSpy = spy((_path: string | URL) => {
         return Promise.resolve(JSON.stringify(mockLockData));
       }) as unknown as ReturnType<typeof spy<typeof Deno.readTextFile>>;
-      Deno.readTextFile = readTextFileSpy as unknown as typeof Deno.readTextFile;
+      Deno.readTextFile =
+        readTextFileSpy as unknown as typeof Deno.readTextFile;
 
       removeSpy = spy((_path: string | URL) => {
         return Promise.resolve();
@@ -314,7 +325,9 @@ describe("mcp-auth-config", () => {
       assertEquals(writeTextFileSpy.calls[0].args[0], expectedPath);
 
       // Parse the written data and verify it contains our test values
-      const writtenData = JSON.parse(writeTextFileSpy.calls[0].args[1] as string);
+      const writtenData = JSON.parse(
+        writeTextFileSpy.calls[0].args[1] as string,
+      );
       assertEquals(writtenData.pid, testPid);
       assertEquals(writtenData.port, testPort);
       assertEquals(typeof writtenData.timestamp, "number");

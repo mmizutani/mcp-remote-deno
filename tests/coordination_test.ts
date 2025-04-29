@@ -1,11 +1,9 @@
-import {
-  assertEquals,
-} from "std/assert/mod.ts";
-import { describe, it, afterEach, beforeEach } from "std/testing/bdd.ts";
+import { assertEquals } from "std/assert/mod.ts";
+import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
 import { stub } from "std/testing/mock.ts";
 import {
-  isPidRunning,
   isLockValid,
+  isPidRunning,
   waitForAuthentication,
 } from "../src/lib/coordination.ts";
 
@@ -83,12 +81,16 @@ describe("coordination", () => {
 
     beforeEach(() => {
       // @ts-ignore - Required for testing
-      setTimeoutStub = stub(globalThis, "setTimeout", (callback: TimerHandler) => {
-        if (typeof callback === "function") {
-          callback();
-        }
-        return 1 as unknown as ReturnType<typeof setTimeout>;
-      });
+      setTimeoutStub = stub(
+        globalThis,
+        "setTimeout",
+        (callback: TimerHandler) => {
+          if (typeof callback === "function") {
+            callback();
+          }
+          return 1 as unknown as ReturnType<typeof setTimeout>;
+        },
+      );
     });
 
     afterEach(() => {
@@ -100,8 +102,10 @@ describe("coordination", () => {
     it("returns true when authentication completes", async () => {
       // Mock fetch to simulate a successful authentication
       // @ts-ignore - Required for testing
-      fetchStub = stub(globalThis, "fetch", () =>
-        Promise.resolve(new Response("Auth completed", { status: 200 }))
+      fetchStub = stub(
+        globalThis,
+        "fetch",
+        () => Promise.resolve(new Response("Auth completed", { status: 200 })),
       );
 
       const result = await waitForAuthentication(8000);
@@ -111,8 +115,10 @@ describe("coordination", () => {
     it("returns false for unexpected status", async () => {
       // Mock fetch to simulate an error response
       // @ts-ignore - Required for testing
-      fetchStub = stub(globalThis, "fetch", () =>
-        Promise.resolve(new Response("Error", { status: 500 }))
+      fetchStub = stub(
+        globalThis,
+        "fetch",
+        () => Promise.resolve(new Response("Error", { status: 500 })),
       );
 
       const result = await waitForAuthentication(8000);
@@ -122,8 +128,10 @@ describe("coordination", () => {
     it("returns false when fetch fails", async () => {
       // Mock fetch to simulate a network error
       // @ts-ignore - Required for testing
-      fetchStub = stub(globalThis, "fetch", () =>
-        Promise.reject(new Error("Network error"))
+      fetchStub = stub(
+        globalThis,
+        "fetch",
+        () => Promise.reject(new Error("Network error")),
       );
 
       const result = await waitForAuthentication(8000);

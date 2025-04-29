@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from "std/assert/mod.ts";
-import { describe, it, beforeEach, afterEach } from "std/testing/bdd.ts";
-import { assertSpyCalls, spy, type Spy } from "std/testing/mock.ts";
+import { afterEach, beforeEach, describe, it } from "std/testing/bdd.ts";
+import { assertSpyCalls, type Spy, spy } from "std/testing/mock.ts";
 import open from "../src/lib/deno-open.ts";
 
 // Define the expected structure returned by the mocked Deno.Command
@@ -38,7 +38,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -60,7 +62,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -76,14 +80,18 @@ describe("deno-open", () => {
 
   it("throws error on command failure", async () => {
     // Mock Deno.Command to return failure
-    const stderrOutput = new TextEncoder().encode("Command failed error message");
+    const stderrOutput = new TextEncoder().encode(
+      "Command failed error message",
+    );
     const mockOutput = {
       success: false,
       code: 1,
       stdout: new Uint8Array(),
       stderr: stderrOutput,
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -105,7 +113,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -125,7 +135,7 @@ describe("deno-open", () => {
     await assertRejects(
       () => open(url, { os: "freebsd" }),
       Error,
-      "Unsupported platform: freebsd"
+      "Unsupported platform: freebsd",
     );
   });
 
@@ -137,7 +147,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -160,7 +172,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -183,7 +197,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -205,7 +221,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -216,7 +234,13 @@ describe("deno-open", () => {
     // Verify the spy was called with correct arguments
     assertSpyCalls(commandSpy, 1);
     assertEquals(commandSpy.calls[0].args[0], "cmd");
-    assertEquals(commandSpy.calls[0].args[1]?.args, ["/c", "start", '""', "/wait", url]);
+    assertEquals(commandSpy.calls[0].args[1]?.args, [
+      "/c",
+      "start",
+      '""',
+      "/wait",
+      url,
+    ]);
   });
 
   it("handles background option on macOS", async () => {
@@ -227,7 +251,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -249,7 +275,9 @@ describe("deno-open", () => {
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -262,7 +290,7 @@ describe("deno-open", () => {
     assertEquals(commandSpy.calls[0].args[0], "cmd");
     assertEquals(
       commandSpy.calls[0].args[1]?.args,
-      ["/c", "start", '""', "https://example.com?param1=value1^&param2=value2"]
+      ["/c", "start", '""', "https://example.com?param1=value1^&param2=value2"],
     );
   });
 
@@ -279,7 +307,7 @@ describe("deno-open", () => {
     await assertRejects(
       () => open(url, { os: "darwin" }),
       Error,
-      `Failed to open "${url}": Command not found: open`
+      `Failed to open "${url}": Command not found: open`,
     );
     assertSpyCalls(commandSpy, 1);
   });
@@ -294,7 +322,9 @@ describe("deno-open", () => {
       stdout: stdoutOutput,
       stderr: stderrOutput,
     };
-    const mockCommandConstructor = () => ({ output: () => Promise.resolve(mockOutput) });
+    const mockCommandConstructor = () => ({
+      output: () => Promise.resolve(mockOutput),
+    });
     commandSpy = spy(mockCommandConstructor);
     (Deno.Command as unknown) = commandSpy;
 
@@ -303,7 +333,7 @@ describe("deno-open", () => {
     await assertRejects(
       () => open(url, { os: "darwin" }),
       Error,
-      `Failed to open "${url}". Command "open ${url}" exited with code 1.\nStderr: Error details\nStdout: Additional info`
+      `Failed to open "${url}". Command "open ${url}" exited with code 1.\nStderr: Error details\nStdout: Additional info`,
     );
     assertSpyCalls(commandSpy, 1);
   });
