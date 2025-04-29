@@ -34,6 +34,12 @@ For remote MCP servers to be secure, they need proper authentication. The MCP sp
 
 This proxy fully implements the [MCP Authorization specification (draft)](https://modelcontextprotocol.io/specification/draft/basic/authorization) which requires OAuth 2.1 with appropriate security measures. The implementation leverages the `@modelcontextprotocol/sdk` package while providing all necessary components to fulfill the complete OAuth 2.1 specification, including:
 
+This proxy acts as an OAuth 2.1 client** (as defined in [OAuth 2.1 Roles](https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-12.html#name-roles)) for protected remote MCP Resource servers
+It implements the MCP Authorization server specification as defined in the [MCP Authorization specification](https://modelcontextprotocol.io/specification/draft/basic/authorization)
+It uses the OAuth Authorization Code grant type as recommended by the [MCP specification](https://modelcontextprotocol.io/specification/draft/basic/authorization#2-1-1-oauth-grant-types) for clients acting on behalf of a human end user
+
+The proxy handles the entire authentication flow, including:
+
 - Handles the OAuth 2.1 authorization code flow with mandatory PKCE for enhanced security
 - Implements server metadata discovery following RFC8414
 - Falls back to default endpoints when metadata discovery is unavailable
@@ -168,7 +174,7 @@ deno run \
 
 ### Setting Up Your MCP Client
 
-To configure your MCP client to use this proxy, you'll need to modify your client's MCP configuration file.
+To configure your MCP client to use this proxy, you'll need to modify the configuration file of your MCP client (such as Cursor, Cline, and Claude Desktop).
 
 #### Cursor
 
@@ -177,7 +183,7 @@ Edit `~/.cursor/mcp.json` (create it if it doesn't exist):
 ```json
 {
   "mcpServers": {
-    "my-remote-server": {
+    "${mcpServerName}": {
       "type": "stdio",
       "command": "deno",
       "args": [
@@ -196,6 +202,10 @@ Edit `~/.cursor/mcp.json` (create it if it doesn't exist):
 }
 ```
 
+Replace `${mcpServerName}` with a unique name for your remote MCP server, and update the URL in the last argument to point to your actual remote MCP server endpoint.
+
+See [Use MCP servers in Cursor](https://docs.cursor.com/context/model-context-protocol) for more details.
+
 #### Claude Desktop
 
 Edit the configuration at:
@@ -203,10 +213,12 @@ Edit the configuration at:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
+If it does not exist yet, [you may need to enable it under Settings > Developer](https://modelcontextprotocol.io/quickstart/user#2-add-the-filesystem-mcp-server).
+
 ```json
 {
   "mcpServers": {
-    "my-remote-server": {
+    "${mcpServerName}": {
       "command": "deno",
       "args": [
         "run",
@@ -224,14 +236,20 @@ Edit the configuration at:
 }
 ```
 
-#### Windsurf
+Restart Claude Desktop after making changes to the configuration file.
 
-Edit `~/.codeium/windsurf/mcp_config.json`:
+See [Use MCP servers in Claude Desktop](https://modelcontextprotocol.io/quickstart/user) for more details.
+
+#### Visual Studio GitHub Copilot
+
+Edit `.vscode/mcp.json` in your project workspace:
 
 ```json
 {
-  "mcpServers": {
-    "my-remote-server": {
+  "inputs": [],
+  "servers": {
+    "${mcpServerName}": {
+      "type": "stdio",
       "command": "deno",
       "args": [
         "run",
@@ -248,6 +266,34 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
   }
 }
 ```
+
+or your user settings`settings.json`
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "${mcpServerName}": {
+        "type": "stdio",
+        "command": "deno",
+        "args": [
+          "run",
+          "--allow-env",
+          "--allow-read",
+          "--allow-sys=homedir",
+          "--allow-run=open",
+          "--allow-write=\"$HOME/.mcp-auth\"",
+          "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
+          "jsr:@mmizutani/mcp-remote-deno",
+          "https://remote.mcp.server.example.com/sse"
+        ]
+      }
+    }
+  }
+}
+```
+
+See [Use MCP servers in VS Code (Preview)](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more details.
 
 **Important Notes:**
 
@@ -360,105 +406,6 @@ sequenceDiagram
 
 If either the client or the server disconnects, the proxy ensures the other connection is also terminated gracefully.
 
-## MCP Server Configuration
-
-You can configure your local MCP client (such as Cursor, Cline, and Claude Desktop) to use this proxy by adding an entry to your MCP configuration file.
-
-For Cursor, edit `~/.cursor/mcp.json` (or create it if it doesn't exist) and add the following configuration:
-
-```json
-{
-  "mcpServers": {
-    "${mcpServerName}": {
-      "type": "stdio",
-      "command": "deno",
-      "args": [
-        "run",
-        "--allow-env",
-        "--allow-read",
-        "--allow-sys=homedir",
-        "--allow-run=open",
-        "--allow-write=\"$HOME/.mcp-auth\"",
-        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
-        "jsr:@mmizutani/mcp-remote-deno",
-        "https://remote.mcp.server.example.com/sse"
-      ]
-    }
-  }
-}
-```
-
-Replace `${mcpServerName}` with a unique name for your remote MCP server, and update the URL in the last argument to point to your actual remote MCP server endpoint.
-
-## Client-Specific Configuration
-
-### Claude Desktop
-
-In order to add an MCP server to Claude Desktop you need to edit the configuration file located at:
-
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-If it does not exist yet, [you may need to enable it under Settings > Developer](https://modelcontextprotocol.io/quickstart/user#2-add-the-filesystem-mcp-server).
-
-Example configuration:
-
-```json
-{
-  "mcpServers": {
-    "remote-example": {
-      "command": "deno",
-      "args": [
-        "run",
-        "--allow-env",
-        "--allow-read",
-        "--allow-sys=homedir",
-        "--allow-run=open",
-        "--allow-write=\"$HOME/.mcp-auth\"",
-        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
-        "jsr:@mmizutani/mcp-remote-deno",
-        "https://remote.mcp.server.example.com/sse"
-      ]
-    }
-  }
-}
-```
-
-Restart Claude Desktop after making changes to the configuration file.
-
-### Cursor
-
-[Official Docs](https://docs.cursor.com/context/model-context-protocol). The configuration file is located at `~/.cursor/mcp.json`.
-
-The configuration example is provided in the "MCP Server Configuration" section above.
-
-### Windsurf
-
-[Official Docs](https://docs.codeium.com/windsurf/mcp). The configuration file is located at `~/.codeium/windsurf/mcp_config.json`.
-
-Example configuration:
-
-```json
-{
-  "mcpServers": {
-    "remote-example": {
-      "command": "deno",
-      "args": [
-        "run",
-        "--allow-env",
-        "--allow-read",
-        "--allow-sys=homedir",
-        "--allow-run=open",
-        "--allow-write=\"$HOME/.mcp-auth\"",
-        "--allow-net=0.0.0.0,127.0.0.1,localhost,remote.mcp.server.example.com",
-        "jsr:@mmizutani/mcp-remote-deno",
-        "https://remote.mcp.server.example.com/sse"
-      ]
-    }
-  }
-}
-```
-
 ## Troubleshooting
 
 ### Clear your `~/.mcp-auth` directory
@@ -521,9 +468,9 @@ If you are behind a VPN and encounter certificate issues, you may need to specif
 ### Check the logs
 
 - [Follow Claude Desktop logs in real-time](https://modelcontextprotocol.io/docs/tools/debugging#debugging-in-claude-desktop)
-- MacOS / Linux:<br/>`tail -n 20 -F ~/Library/Logs/Claude/mcp*.log`
-- For bash on WSL:<br/>`tail -n 20 -f "C:\Users\YourUsername\AppData\Local\Claude\Logs\mcp.log"`
-- Powershell: <br/>`Get-Content "C:\Users\YourUsername\AppData\Local\Claude\Logs\mcp.log" -Wait -Tail 20`
+- MacOS / Linux: `tail -n 20 -F ~/Library/Logs/Claude/mcp*.log`
+- For bash on WSL: `tail -n 20 -f "C:\Users\YourUsername\AppData\Local\Claude\Logs\mcp.log"`
+- Powershell: `Get-Content "C:\Users\YourUsername\AppData\Local\Claude\Logs\mcp.log" -Wait -Tail 20`
 
 ## Debugging
 
@@ -646,10 +593,7 @@ For instructions on building & deploying remote MCP servers, including acting as
 - <https://github.com/cloudflare/workers-oauth-provider> - For defining an MCP-compliant OAuth server in Cloudflare Workers
 - <https://github.com/cloudflare/agents/tree/main/examples/mcp> - For defining an `McpAgent` using the [`agents`](https://npmjs.com/package/agents) framework
 - <https://developers.cloudflare.com/agents/guides/test-remote-mcp-server/> - For testing remote MCP servers
-
-## License
-
-MIT - See the [LICENSE](LICENSE) file for details.
+- <https://modelcontextprotocol.io/specification/draft/basic/authorization> - For specification of authorization flow for MCP servers
 
 ## Acknowledgements
 
@@ -658,3 +602,7 @@ This project would not be possible without these excellent open source projects:
 - [mcp-remote](https://www.npmjs.com/package/mcp-remote) - The original NPM package that this Deno wrapper is based on. Created by Glen Maddern (@geelen), mcp-remote pioneered the approach of connecting local stdio-based MCP clients (like Cursor, Cline and Claude Desktop) to remote MCP servers over HTTP+SSE. It handles the complex OAuth authentication flow and bidirectional proxying between different transport protocols, forming the foundational architecture that this Deno implementation builds upon.
 
 - [@yamanoku/baseline-mcp-server](https://jsr.io/@yamanoku/baseline-mcp-server) - Developed by Okuto Oyama (@yamanoku), this project provided inspiration for implementing an MCP server within Deno's secure runtime environment. Its clean architecture and approach to permission management exemplifies how to properly leverage Deno's sandbox security model while maintaining full compatibility with the MCP specification.
+
+## License
+
+MIT - See the [LICENSE](LICENSE) file for details.

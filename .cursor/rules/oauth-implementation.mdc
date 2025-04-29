@@ -1,0 +1,27 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# OAuth Implementation
+
+The MCP Remote package uses OAuth for authentication with the remote server.
+
+## OAuth Client Provider
+
+The `NodeOAuthClientProvider` class in [src/lib/node-oauth-client-provider.ts](mdc:src/lib/node-oauth-client-provider.ts) implements the OAuth client functionality:
+
+- Manages client registration with the server
+- Handles authorization code flow
+- Stores and retrieves tokens
+- Manages PKCE code verifier/challenge
+
+## Testing OAuth
+
+When testing the OAuth implementation:
+
+1. Use the `mockDeps` object to inject dependencies
+2. Access the software version via `provider.clientMetadata.software_version`
+3. Use `assertMatch()` to test string patterns in logs
+
+See test examples in [tests/node-oauth-client-provider_test.ts](mdc:tests/node-oauth-client-provider_test.ts)
