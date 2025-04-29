@@ -10,14 +10,24 @@ import type {
   OAuthTokens,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
 import type { OAuthProviderOptions } from "./types.ts";
-import {
-  readJsonFile,
-  readTextFile,
-  writeJsonFile,
-  writeTextFile,
-} from "./mcp-auth-config.ts";
-import { getServerUrlHash, log, MCP_REMOTE_VERSION } from "./utils.ts";
-import open from "./deno-open.ts";
+import * as mcpAuth from "./mcp-auth-config.ts";
+import * as utils from "./utils.ts";
+import * as openModule from "./deno-open.ts";
+
+/**
+ * Interface defining the dependencies for NodeOAuthClientProvider,
+ * allowing for injection during testing.
+ */
+export interface NodeOAuthClientProviderDeps {
+  getServerUrlHash: typeof utils.getServerUrlHash;
+  readJsonFile: typeof mcpAuth.readJsonFile;
+  writeJsonFile: typeof mcpAuth.writeJsonFile;
+  readTextFile: typeof mcpAuth.readTextFile;
+  writeTextFile: typeof mcpAuth.writeTextFile;
+  log: typeof utils.log;
+  open: typeof openModule.default;
+  mcpRemoteVersion: string;
+}
 
 /**
  * Implements the OAuthClientProvider interface for Node.js environments.
@@ -29,21 +39,38 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
   private clientName: string;
   private clientUri: string;
   private softwareId: string;
-  private softwareVersion: string;
+
+  // Store dependencies internally
+  private deps: NodeOAuthClientProviderDeps;
 
   /**
    * Creates a new NodeOAuthClientProvider
    * @param options Configuration options for the provider
+   * @param deps Optional dependencies for testing
    */
-  constructor(readonly options: OAuthProviderOptions) {
-    this.serverUrlHash = getServerUrlHash(options.serverUrl);
+  constructor(
+    readonly options: OAuthProviderOptions,
+    deps?: Partial<NodeOAuthClientProviderDeps>,
+  ) {
+    // Use provided dependencies or default to actual implementations
+    this.deps = {
+      getServerUrlHash: deps?.getServerUrlHash ?? utils.getServerUrlHash,
+      readJsonFile: deps?.readJsonFile ?? mcpAuth.readJsonFile,
+      writeJsonFile: deps?.writeJsonFile ?? mcpAuth.writeJsonFile,
+      readTextFile: deps?.readTextFile ?? mcpAuth.readTextFile,
+      writeTextFile: deps?.writeTextFile ?? mcpAuth.writeTextFile,
+      log: deps?.log ?? utils.log,
+      open: deps?.open ?? openModule.default,
+      mcpRemoteVersion: deps?.mcpRemoteVersion ?? utils.MCP_REMOTE_VERSION,
+    };
+
+    this.serverUrlHash = this.deps.getServerUrlHash(options.serverUrl);
     this.callbackPath = options.callbackPath || "/oauth/callback";
     this.clientName = options.clientName || "MCP CLI Client";
     this.clientUri = options.clientUri ||
       "https://github.com/modelcontextprotocol/mcp-cli";
     this.softwareId = options.softwareId ||
       "2e6dc280-f3c3-4e01-99a7-8181dbd1d23d";
-    this.softwareVersion = options.softwareVersion || MCP_REMOTE_VERSION;
   }
 
   get redirectUrl(): string {
@@ -59,7 +86,8 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
       client_name: this.clientName,
       client_uri: this.clientUri,
       software_id: this.softwareId,
-      software_version: this.softwareVersion,
+      software_version: this.options.softwareVersion ??
+        this.deps.mcpRemoteVersion,
     };
   }
 
@@ -69,7 +97,7 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
    */
   clientInformation(): Promise<OAuthClientInformation | undefined> {
     // log('Reading client info')
-    return readJsonFile<OAuthClientInformation>(
+    return this.deps.readJsonFile<OAuthClientInformation>(
       this.serverUrlHash,
       "client_info.json",
       OAuthClientInformationSchema,
@@ -84,7 +112,7 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
     clientInformation: OAuthClientInformationFull,
   ): Promise<void> {
     // log('Saving client info')
-    await writeJsonFile(
+    await this.deps.writeJsonFile(
       this.serverUrlHash,
       "client_info.json",
       clientInformation,
@@ -98,7 +126,7 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
   tokens(): Promise<OAuthTokens | undefined> {
     // log('Reading tokens')
     // console.log(new Error().stack)
-    return readJsonFile<OAuthTokens>(
+    return this.deps.readJsonFile<OAuthTokens>(
       this.serverUrlHash,
       "tokens.json",
       OAuthTokensSchema,
@@ -111,7 +139,7 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
    */
   async saveTokens(tokens: OAuthTokens): Promise<void> {
     // log('Saving tokens')
-    await writeJsonFile(this.serverUrlHash, "tokens.json", tokens);
+    await this.deps.writeJsonFile(this.serverUrlHash, "tokens.json", tokens);
   }
 
   /**
@@ -119,14 +147,14 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
    * @param authorizationUrl The URL to redirect to
    */
   async redirectToAuthorization(authorizationUrl: URL): Promise<void> {
-    log(
+    this.deps.log(
       `\nPlease authorize this client by visiting:\n${authorizationUrl.toString()}\n`,
     );
     try {
-      await open(authorizationUrl.toString());
-      log("Browser opened automatically.");
+      await this.deps.open(authorizationUrl.toString());
+      this.deps.log("Browser opened automatically.");
     } catch (_error) {
-      log(
+      this.deps.log(
         "Could not open browser automatically. Please copy and paste the URL above into your browser.",
       );
     }
@@ -138,7 +166,11 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
    */
   async saveCodeVerifier(codeVerifier: string): Promise<void> {
     // log('Saving code verifier')
-    await writeTextFile(this.serverUrlHash, "code_verifier.txt", codeVerifier);
+    await this.deps.writeTextFile(
+      this.serverUrlHash,
+      "code_verifier.txt",
+      codeVerifier,
+    );
   }
 
   /**
@@ -147,7 +179,7 @@ export class NodeOAuthClientProvider implements OAuthClientProvider {
    */
   async codeVerifier(): Promise<string> {
     // log('Reading code verifier')
-    return await readTextFile(
+    return await this.deps.readTextFile(
       this.serverUrlHash,
       "code_verifier.txt",
       "No code verifier saved for session",
