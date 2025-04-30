@@ -45,11 +45,31 @@ import { NodeOAuthClientProvider } from "./lib/node-oauth-client-provider.ts";
 import { coordinateAuth } from "./lib/coordination.ts";
 
 /**
- * Runs the MCP proxy server
- * @param serverUrl The URL of the remote MCP server to connect to
- * @param callbackPort The port to use for OAuth callback server
- * @param headers Custom HTTP headers to send with requests to the remote server
- * @returns A Promise that resolves when the proxy is closed
+ * Runs the MCP proxy server that bridges local STDIO MCP clients to remote HTTP+SSE MCP servers
+ *
+ * This function sets up the complete bidirectional proxy, handling OAuth authentication, token management,
+ * and the translation between different MCP transport protocols. It will automatically open a browser
+ * for authentication if needed, or reuse existing credentials if available.
+ *
+ * @param serverUrl The URL of the remote MCP server to connect to (e.g., "https://example.com/sse")
+ * @param callbackPort The local port to use for OAuth callback server (default: 3334). This port must be available
+ *                     for the OAuth redirect URL during the authentication flow
+ * @param headers Custom HTTP headers to send with requests to the remote server. This can be used to pass
+ *                API keys or other authentication tokens when not using OAuth
+ * @returns A Promise that resolves when the proxy is closed or rejects if an error occurs during setup
+ *
+ * @example
+ * ```ts
+ * // Basic usage with default settings
+ * await runProxy("https://remote.mcp.server.example.com/sse", 3334, {});
+ *
+ * // With custom headers for API key authentication
+ * await runProxy(
+ *   "https://remote.mcp.server.example.com/sse",
+ *   3334,
+ *   { "X-Api-Key": "your-api-key" }
+ * );
+ * ```
  */
 async function runProxy(
   serverUrl: string,

@@ -1,3 +1,41 @@
+/**
+ * This module provides core utilities for the MCP remote proxy and client implementations.
+ * It includes functions for bidirectional proxying between transports, OAuth authentication,
+ * command-line argument parsing, and other common operations used throughout the package.
+ *
+ * @example
+ * ```ts
+ * import {
+ *   mcpProxy,
+ *   connectToRemoteServer,
+ *   parseCommandLineArgs
+ * } from "@mmizutani/mcp-remote-deno/lib/utils";
+ *
+ * // Parse command line arguments
+ * const { serverUrl, callbackPort, headers } = await parseCommandLineArgs(
+ *   process.argv.slice(2),
+ *   3334,
+ *   "Usage: <command> <server-url> [callback-port]"
+ * );
+ *
+ * // Connect to remote server
+ * const remoteTransport = await connectToRemoteServer(
+ *   serverUrl,
+ *   authProvider,
+ *   headers,
+ *   waitForAuthCode
+ * );
+ *
+ * // Set up bidirectional proxy
+ * mcpProxy({
+ *   transportToClient: localTransport,
+ *   transportToServer: remoteTransport
+ * });
+ * ```
+ *
+ * @module
+ */
+
 import {
   type OAuthClientProvider,
   UnauthorizedError,

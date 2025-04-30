@@ -1,3 +1,35 @@
+/**
+ * This module handles authentication coordination between multiple instances of the MCP client or proxy.
+ * It manages lockfiles to prevent conflicts and enables sharing authentication state between processes.
+ *
+ * The coordination system allows multiple MCP processes to work together, so that when one process
+ * completes the OAuth authentication flow, other processes can reuse the same tokens without
+ * requiring the user to authenticate again.
+ *
+ * @example
+ * ```ts
+ * import { coordinateAuth } from "@mmizutani/mcp-remote-deno/lib/coordination";
+ * import { EventEmitter } from "node:events";
+ *
+ * // Set up coordination between multiple instances
+ * const events = new EventEmitter();
+ * const serverUrlHash = getServerUrlHash(serverUrl);
+ *
+ * const { server, waitForAuthCode, skipBrowserAuth } = await coordinateAuth(
+ *   serverUrlHash,
+ *   callbackPort,
+ *   events
+ * );
+ *
+ * // If skipBrowserAuth is true, another instance is handling authentication
+ * if (skipBrowserAuth) {
+ *   console.log("Will use tokens from another instance");
+ * }
+ * ```
+ *
+ * @module
+ */
+
 import {
   checkLockfile,
   createLockfile,
