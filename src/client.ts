@@ -1,6 +1,29 @@
 #!/usr/bin/env node
 
 /**
+ * This module provides a standalone MCP client for testing and debugging connections to remote MCP servers.
+ * It directly connects to remote HTTP+SSE MCP servers with OAuth authentication, bypassing the need for
+ * a separate MCP client application like Cursor or Claude Desktop.
+ *
+ * The client requests tools and resources from the remote server and displays them, making it useful for
+ * verifying server configuration, authentication, and connectivity before integration with other applications.
+ *
+ * @example
+ * ```ts
+ * import { runClient } from "@mmizutani/mcp-remote-deno/client";
+ *
+ * // Connect to a remote MCP server and list available tools and resources
+ * await runClient(
+ *   "https://remote.mcp.server.example.com/sse",
+ *   3333,
+ *   { "X-Custom-Header": "value" }
+ * );
+ * ```
+ *
+ * @module
+ */
+
+/**
  * MCP Client with OAuth support
  * A command-line client that connects to an MCP server using SSE with OAuth authentication.
  *
@@ -28,10 +51,31 @@ import {
 import { coordinateAuth } from "./lib/coordination.ts";
 
 /**
- * Main function to run the client
- * @param serverUrl The URL of the remote MCP server to connect to
- * @param callbackPort The port to use for OAuth callback server
- * @param headers Custom HTTP headers to send with requests to the remote server
+ * Main function to run the standalone MCP client for testing and debugging remote MCP servers
+ *
+ * This function sets up a complete MCP client that connects directly to a remote HTTP+SSE MCP server.
+ * It handles OAuth authentication if required, and fetches and displays the available tools and resources
+ * from the server. This is useful for verifying that a remote MCP server is properly configured and
+ * accessible before integrating it with other applications.
+ *
+ * @param serverUrl The URL of the remote MCP server to connect to (e.g., "https://example.com/sse")
+ * @param callbackPort The local port to use for OAuth callback server (default: 3333). This port must
+ *                     be available for the OAuth redirect URL during the authentication flow
+ * @param headers Custom HTTP headers to send with requests to the remote server. This can be used to pass
+ *                API keys or other authentication tokens when not using OAuth
+ *
+ * @example
+ * ```ts
+ * // Basic usage with default settings
+ * await runClient("https://remote.mcp.server.example.com/sse", 3333, {});
+ *
+ * // With custom headers for API key authentication
+ * await runClient(
+ *   "https://remote.mcp.server.example.com/sse",
+ *   3333,
+ *   { "X-Api-Key": "your-api-key" }
+ * );
+ * ```
  */
 async function runClient(
   serverUrl: string,

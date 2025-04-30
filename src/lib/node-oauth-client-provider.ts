@@ -1,3 +1,32 @@
+/**
+ * This module implements the OAuthClientProvider interface for the MCP remote client and proxy.
+ * It handles the complete OAuth 2.1 authentication flow, including client registration, token
+ * management, PKCE code verification, and token storage.
+ *
+ * The NodeOAuthClientProvider class provides a secure implementation of the OAuth client
+ * that works across multiple instances and processes through file-based credential sharing.
+ *
+ * @example
+ * ```ts
+ * import { NodeOAuthClientProvider } from "@mmizutani/mcp-remote-deno/lib/node-oauth-client-provider";
+ *
+ * // Create an OAuth client provider
+ * const authProvider = new NodeOAuthClientProvider({
+ *   serverUrl: "https://remote.mcp.server.example.com/sse",
+ *   callbackPort: 3334,
+ *   clientName: "My MCP Client"
+ * });
+ *
+ * // Use the provider with an SSE transport
+ * const transport = new SSEClientTransport(url, {
+ *   authProvider,
+ *   requestInit: { headers }
+ * });
+ * ```
+ *
+ * @module
+ */
+
 import type { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
 import "@modelcontextprotocol/sdk/client/auth.js";
 import {
@@ -30,8 +59,20 @@ export interface NodeOAuthClientProviderDeps {
 }
 
 /**
- * Implements the OAuthClientProvider interface for Node.js environments.
- * Handles OAuth flow and token storage for MCP clients.
+ * Implements the OAuthClientProvider interface for secure OAuth 2.1 authentication flows.
+ *
+ * This class handles:
+ * - OAuth client registration with dynamic client metadata
+ * - Secure storage of client information and tokens in the user's config directory
+ * - PKCE code challenge and verification for enhanced security
+ * - Token refresh and management
+ * - Browser-based user authentication
+ *
+ * It follows OAuth 2.1 best practices including:
+ * - Authorization Code flow with PKCE
+ * - Public client support (no client secret)
+ * - Strict redirect URI validation
+ * - Token storage in the user's home directory
  */
 export class NodeOAuthClientProvider implements OAuthClientProvider {
   private serverUrlHash: string;

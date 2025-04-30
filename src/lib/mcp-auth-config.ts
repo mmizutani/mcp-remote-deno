@@ -1,3 +1,48 @@
+/**
+ * This module handles the storage and retrieval of authentication-related data for MCP Remote.
+ * It provides a secure file-based storage system for OAuth credentials, tokens, and synchronization
+ * between multiple MCP processes.
+ *
+ * Configuration directory structure:
+ * - The config directory is determined by MCP_REMOTE_CONFIG_DIR env var or defaults to ~/.mcp-auth
+ * - Version-specific subdirectories ensure compatibility across proxy versions
+ * - Each file is prefixed with a hash of the server URL to separate configurations for different servers
+ *
+ * Files stored in the config directory:
+ * - {server_hash}_client_info.json: Contains OAuth client registration information
+ * - {server_hash}_tokens.json: Contains OAuth access and refresh tokens
+ * - {server_hash}_code_verifier.txt: Contains the PKCE code verifier for the current OAuth flow
+ * - {server_hash}_lock.json: Contains process synchronization data to prevent conflicts
+ *
+ * @example
+ * ```ts
+ * import {
+ *   readJsonFile,
+ *   writeJsonFile,
+ *   getConfigDir
+ * } from "@mmizutani/mcp-remote-deno/lib/mcp-auth-config";
+ *
+ * // Get the hash for a server URL
+ * const serverUrlHash = getServerUrlHash("https://example.com/sse");
+ *
+ * // Read stored tokens
+ * const tokens = await readJsonFile(
+ *   serverUrlHash,
+ *   "tokens.json",
+ *   OAuthTokensSchema
+ * );
+ *
+ * // Write updated tokens
+ * await writeJsonFile(
+ *   serverUrlHash,
+ *   "tokens.json",
+ *   newTokens
+ * );
+ * ```
+ *
+ * @module
+ */
+
 import path from "node:path";
 import os from "node:os";
 import { log, MCP_REMOTE_VERSION } from "./utils.ts";
