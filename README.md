@@ -601,6 +601,7 @@ For instructions on building & deploying remote MCP servers, including acting as
 - <https://github.com/cloudflare/agents/tree/main/examples/mcp> - For defining an `McpAgent` using the [`agents`](https://npmjs.com/package/agents) framework
 - <https://developers.cloudflare.com/agents/guides/test-remote-mcp-server/> - For testing remote MCP servers
 - <https://modelcontextprotocol.io/specification/draft/basic/authorization> - For specification of authorization flow for MCP servers
+- <https://modelcontextprotocol.io/llms-full.txt> - All-in-one full text of the MCP specification for ingesting into your LLM
 
 ## Acknowledgements
 
