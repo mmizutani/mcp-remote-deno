@@ -1,6 +1,6 @@
 {
   "name": "@mmizutani/mcp-remote-deno",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "description": "A Deno-based bidirectional proxy for Model Context Protocol (MCP) that connects local STDIO servers to remote SSE servers with OAuth authentication support",
   "exports": {

@@ -51,7 +51,7 @@ import createServer from "./deno-http-server.ts";
 /**
  * Current version of the MCP Remote package
  */
-export const MCP_REMOTE_VERSION = "0.0.2";
+export const MCP_REMOTE_VERSION = "0.0.3";
 
 const pid = Deno.pid;
 /**
