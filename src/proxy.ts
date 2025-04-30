@@ -1,6 +1,28 @@
 #!/usr/bin/env node
 
 /**
+ * This module implements a bidirectional proxy between local STDIO-based MCP clients and remote HTTP+SSE MCP servers.
+ * It handles the complete OAuth 2.1 authentication flow, including PKCE, token management, and secure credential storage.
+ *
+ * The proxy translates between different MCP transport protocols, allowing applications like Claude Desktop and Cursor
+ * that only support local STDIO connections to communicate with remote MCP servers that use HTTP+SSE transport.
+ *
+ * @example
+ * ```ts
+ * import { runProxy } from "@mmizutani/mcp-remote-deno";
+ *
+ * // Connect to a remote MCP server with optional headers
+ * await runProxy(
+ *   "https://remote.mcp.server.example.com/sse",
+ *   3334,
+ *   { "Authorization": "Bearer token" }
+ * );
+ * ```
+ *
+ * @module
+ */
+
+/**
  * MCP Proxy with OAuth support
  * A bidirectional proxy between a local STDIO MCP server and a remote SSE server with OAuth authentication.
  *

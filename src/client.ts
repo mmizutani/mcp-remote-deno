@@ -1,6 +1,29 @@
 #!/usr/bin/env node
 
 /**
+ * This module provides a standalone MCP client for testing and debugging connections to remote MCP servers.
+ * It directly connects to remote HTTP+SSE MCP servers with OAuth authentication, bypassing the need for
+ * a separate MCP client application like Cursor or Claude Desktop.
+ *
+ * The client requests tools and resources from the remote server and displays them, making it useful for
+ * verifying server configuration, authentication, and connectivity before integration with other applications.
+ *
+ * @example
+ * ```ts
+ * import { runClient } from "@mmizutani/mcp-remote-deno/client";
+ *
+ * // Connect to a remote MCP server and list available tools and resources
+ * await runClient(
+ *   "https://remote.mcp.server.example.com/sse",
+ *   3333,
+ *   { "X-Custom-Header": "value" }
+ * );
+ * ```
+ *
+ * @module
+ */
+
+/**
  * MCP Client with OAuth support
  * A command-line client that connects to an MCP server using SSE with OAuth authentication.
  *
